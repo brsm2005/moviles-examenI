@@ -5,7 +5,8 @@ import { NetInfoConnectivityService } from '@/infrastructure/device/NetInfoConne
 import { ExpoLocationService } from '@/infrastructure/device/ExpoLocationService';
 import { expoPhotoStorageService } from '@/infrastructure/device/ExpoPhotoStorageService';
 import { GeminiActaOcrService } from '@/infrastructure/ai/GeminiActaOcrService';
-import { FirebaseCrashReportingService } from '@/infrastructure/monitoring/FirebaseCrashReportingService';
+import { FirebaseCrashlyticsService } from '@/infrastructure/monitoring/crashlytics';
+import { SupabaseMonitoreoProvincial } from '@/infrastructure/supabase/SupabaseMonitoreoProvincial';
 import { SQLiteActaDataSource } from '@/infrastructure/storage/SQLiteActaDataSource';
 import { SupabaseActaDataSource } from '@/infrastructure/supabase/SupabaseActaDataSource';
 import { SQLiteTerritorioDataSource } from '@/infrastructure/storage/SQLiteTerritorioDataSource';
@@ -14,7 +15,8 @@ import { SupabaseTerritorioDataSource } from '@/infrastructure/supabase/Supabase
 import { SyncWorker } from '@/infrastructure/sync/SyncWorker';
 import { createAppStore } from '@/presentation/store';
 
-export const crashReportingService = new FirebaseCrashReportingService();
+export const crashReportingService = new FirebaseCrashlyticsService();
+export const monitoreoProvincial = new SupabaseMonitoreoProvincial();
 export const connectivityService = new NetInfoConnectivityService();
 export const territorioRepository = new TerritorioRepository(
   new SupabaseTerritorioDataSource(),
@@ -23,7 +25,7 @@ export const territorioRepository = new TerritorioRepository(
 );
 export const actaRepository = new ActaRepository(
   new SQLiteActaDataSource(),
-  new SupabaseActaDataSource(),
+  new SupabaseActaDataSource(crashReportingService),
   connectivityService,
 );
 export const photoStorageService = expoPhotoStorageService;
@@ -41,4 +43,5 @@ export const store = createAppStore(
   territorioRepository,
   crashReportingService,
   actaRepository,
+  monitoreoProvincial,
 );

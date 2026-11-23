@@ -22,3 +22,5 @@ La organización necesita saber dónde se registró cada acta y que el coordinad
 ## Consecuencias
 * Mayor uso momentáneo de batería al solicitar alta precisión satelital (`Accuracy.High`) durante la captura del acta.
 * Permite trazabilidad territorial offline y detección visual inmediata de anomalías (`!`) para el Coordinador Provincial sin bloquear la operación rural.
+* El tablero permite seleccionar un cantón y un recinto o consultar el total cantonal. Una mesa se considera reportada cuando tiene al menos una acta enviada; las actas faltantes se muestran por separado. El detalle carga una URL firmada del bucket privado y requiere conexión para la fotografía y el mapa.
+* Antes de desplegar el tablero en una base existente debe aplicarse la migración `20261123120000_monitoreo_provincial.sql`, que hace que las vistas respeten las políticas RLS del usuario. La publicación Realtime debe incluir `actas` y `acta_votos_candidatos`.

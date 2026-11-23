@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { ActaOcrNotification } from '@/presentation/components/actas/ActaOcrNotification';
 import { avisarActaLista } from '@/presentation/store/slices/actaSlice';
 import { hydrateSession } from '@/presentation/store/slices/authSlice';
-import { store, syncWorker } from './services';
+import { crashReportingService, store, syncWorker } from './services';
 
 function AuthBootstrap() {
   const dispatch = useAppDispatch();
@@ -23,6 +23,12 @@ function AuthBootstrap() {
 function ActaWorkerBootstrap() {
   const dispatch = useAppDispatch();
   const usuarioId = useAppSelector((state) => state.auth.perfil?.id ?? null);
+  const rol = useAppSelector((state) => state.auth.perfil?.rol ?? null);
+
+  useEffect(() => {
+    crashReportingService.establecerRol(rol);
+    return () => crashReportingService.establecerRol(null);
+  }, [rol]);
 
   useEffect(() => {
     if (!usuarioId) return undefined;

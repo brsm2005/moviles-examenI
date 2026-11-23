@@ -252,6 +252,16 @@ export function ProvincialTerritoryScreen() {
         ) : null}
 
         <View className="flex-row flex-wrap gap-3">
+          <Link href="/(provincial)/monitoreo" asChild>
+            <Pressable accessibilityRole="button" className="min-h-12 w-full items-center justify-center rounded-xl bg-primario px-4">
+              <Text className="font-bold text-white" selectable>Monitoreo provincial</Text>
+            </Pressable>
+          </Link>
+          <Link href="/ajustes" asChild>
+            <Pressable accessibilityRole="button" className="min-h-12 w-full items-center justify-center rounded-xl border border-slate-300 bg-white px-4">
+              <Text className="font-bold text-texto" selectable>Perfil y ajustes</Text>
+            </Pressable>
+          </Link>
           <Pressable
             accessibilityRole="button"
             className="min-h-12 flex-1 items-center justify-center rounded-xl bg-primario px-4"

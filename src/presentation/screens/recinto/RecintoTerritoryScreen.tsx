@@ -201,6 +201,13 @@ export function RecintoTerritoryScreen() {
           <View className="gap-2">
             <Pressable
               accessibilityRole="button"
+              className="min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-3"
+              onPress={() => router.push('/ajustes')}
+            >
+              <Text className="text-xs font-bold text-texto" selectable>Ajustes</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
               className="min-h-11 items-center justify-center rounded-xl border border-primario bg-white px-3"
               onPress={() => router.push('/(actas)/historial')}
             >

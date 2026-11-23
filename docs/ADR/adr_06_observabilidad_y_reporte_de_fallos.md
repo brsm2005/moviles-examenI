@@ -22,3 +22,9 @@ En procesos anteriores la aplicación se cerraba sola sin dejar rastro del dispo
 ## Consecuencias
 * Los errores funcionales (fallo en OCR, fallo de subida a Storage) se registran como excepciones no fatales (`crashlytics().recordError(...)`) con atributos personalizados (`operacion`, `pantalla`, `acta_id`), mostrando el *stack trace* exacto en la consola de Firebase al recuperar conexión.
 * Obliga a integrar `google-services.json` en `app.json` y probar la telemetría directamente sobre el APK compilado.
+
+### Verificación de la implementación
+
+En un APK o development build configurado para el proyecto Firebase, abra **Perfil y ajustes** y pulse **Simular error para Crashlytics**. Es una excepción no fatal: no cierra la aplicación. Para ensayar el flujo offline, desconecte el dispositivo, registre el error y restablezca la conexión; compruebe posteriormente en la consola Firebase su llegada. El botón confirma únicamente la llamada al SDK, no la entrega al servidor, que puede tardar varios minutos. Los atributos son `rol`, `pantalla`, `operacion` y `acta_id`; cuando no corresponde un acta se usa `no_aplica`.
+
+En compilaciones Android de depuración, React Native Firebase desactiva la recolección por defecto. Use un APK release o habilite explícitamente `crashlytics_debug_enabled` en `firebase.json` antes de compilar el development build de prueba.

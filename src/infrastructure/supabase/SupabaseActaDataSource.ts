@@ -1,6 +1,7 @@
 import { File } from 'expo-file-system';
 import type { Acta } from '@/domain/entities/Acta';
 import type { Dignidad } from '@/domain/entities/Candidato';
+import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 import type {
   DatosAuditoriaCorreccion,
   IActaRemoteDataSource,
@@ -83,6 +84,8 @@ async function mapearActa(row: ActaRow): Promise<Acta> {
 }
 
 export class SupabaseActaDataSource implements IActaRemoteDataSource {
+  constructor(private readonly crashReporting: ICrashReportingService) {}
+
   async listarSincronizadas(): Promise<Acta[]> {
     const { data, error } = await supabase
       .from('actas')
@@ -118,13 +121,21 @@ export class SupabaseActaDataSource implements IActaRemoteDataSource {
       if (!foto.exists) {
         throw new Error('No se encontró el archivo local de evidencia del acta.');
       }
-      const { error: uploadError } = await supabase.storage
-        .from('actas-evidencia')
-        .upload(fotoStoragePath, await foto.bytes(), {
-          contentType: 'image/jpeg',
-          upsert: true,
-        });
-      if (uploadError) throw uploadError;
+      try {
+        const { error: uploadError } = await supabase.storage
+          .from('actas-evidencia')
+          .upload(fotoStoragePath, await foto.bytes(), {
+            contentType: 'image/jpeg',
+            upsert: true,
+          });
+        if (uploadError) throw uploadError;
+      } catch (error) {
+        await this.crashReporting.registrarError(
+          error instanceof Error ? error : new Error('No se pudo subir la fotografía.'),
+          { operacion: 'subir_foto_acta', pantalla: 'sincronizacion_acta', actaId: acta.id },
+        );
+        throw error;
+      }
     } else if (!acta.fotoStoragePath) {
       throw new Error('No se puede sincronizar una URL sin ruta de almacenamiento.');
     }

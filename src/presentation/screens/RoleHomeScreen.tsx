@@ -91,6 +91,13 @@ export function RoleHomeScreen({
       <Pressable
         accessibilityRole="button"
         className="min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
+        onPress={() => router.push('/ajustes')}
+      >
+        <Text className="font-semibold text-texto" selectable>Perfil y ajustes</Text>
+      </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        className="min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
         onPress={handleSignOut}
       >
         <Text className="font-semibold text-texto" selectable>
