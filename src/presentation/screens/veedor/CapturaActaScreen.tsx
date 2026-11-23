@@ -209,7 +209,7 @@ export function CapturaActaScreen({
         foto.uri,
       );
       const nitidez = await imageQualityService.analizarNitidez(fotoVertical);
-      if (!nitidez.esNitida) {
+      if (nitidez.esBorrosa) {
         throw new FotoBorrosoError(
           'La imagen está borrosa. Mantenga el teléfono firme y vuelva a tomar la foto.',
         );

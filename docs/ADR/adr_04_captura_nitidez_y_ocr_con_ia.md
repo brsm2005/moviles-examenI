@@ -24,7 +24,7 @@ En elecciones pasadas había actas que resultaron borrosas o ilegibles y muchos 
 * Obliga a manejar el procesamiento diferido cuando no haya conexión a internet y exigir revisión humana antes del envío definitivo.
 
 ## Implementación
-* La pantalla del veedor usa exclusivamente `expo-camera`, presenta una guía vertical y controla `enableTorch`. La imagen se normaliza a JPEG vertical y se analiza reducida a 512 px mediante la varianza del Laplaciano; el umbral inicial de aceptación es 100.
+* La pantalla del veedor usa exclusivamente `expo-camera`, presenta una guía vertical y controla `enableTorch`. La imagen se normaliza a JPEG vertical y se analiza a 640 px mediante la varianza del Laplaciano suavizada dos veces; se toma la mejor región local de 64×64 px con paso de 32 px y el umbral calibrado es 35.
 * La ubicación de alta precisión se obtiene al mismo tiempo que la toma. Una captura sin permiso o sin coordenadas no se persiste.
 * `GeminiActaOcrService` usa `gemini-2.5-flash` con JSON estructurado y campos numéricos anulables. Configure `EXPO_PUBLIC_GEMINI_API_KEY` en el entorno de Expo y restrinja esa clave a la API y aplicación correspondientes, porque las variables `EXPO_PUBLIC_*` forman parte del cliente móvil.
 * La extracción conserva sus resultados en `NEEDS_CONFIRMATION`, incluso si las cifras no cuadran; la validación aritmética estricta se aplica al confirmar manualmente.
