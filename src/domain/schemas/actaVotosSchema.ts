@@ -79,6 +79,8 @@ export const actaVotosOcrSchema = camposVotosActaSchema.superRefine(
   (acta, contexto) => validarVotosActa(acta, contexto, false),
 );
 
+export const actaVotosExtraidosSchema = camposVotosActaSchema;
+
 export const actaVotosConfirmacionSchema = camposVotosActaSchema.superRefine(
   (acta, contexto) => validarVotosActa(acta, contexto, true),
 );

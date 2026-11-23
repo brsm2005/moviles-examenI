@@ -1,4 +1,4 @@
-import type { Dignidad } from '../entities/Candidato';
+import type { Candidato, Dignidad } from '../entities/Candidato';
 import type { VotoCandidato } from '../entities/VotoCandidato';
 
 export interface ResultadoOcrActa {
@@ -9,5 +9,9 @@ export interface ResultadoOcrActa {
 }
 
 export interface IActaOcrService {
-  extraerVotos(fotoUri: string, dignidad: Dignidad): Promise<ResultadoOcrActa>;
+  extraerVotos(
+    fotoUri: string,
+    dignidad: Dignidad,
+    candidatos: Candidato[],
+  ): Promise<ResultadoOcrActa>;
 }

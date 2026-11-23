@@ -22,3 +22,9 @@ En elecciones pasadas había actas que resultaron borrosas o ilegibles y muchos 
 ## Consecuencias
 * Se ahorra tiempo de digitación al usar OCR estructurado con IA y se garantiza calidad visual al bloquear fotos borrosas desde el dispositivo antes de guardarlas.
 * Obliga a manejar el procesamiento diferido cuando no haya conexión a internet y exigir revisión humana antes del envío definitivo.
+
+## Implementación
+* La pantalla del veedor usa exclusivamente `expo-camera`, presenta una guía vertical y controla `enableTorch`. La imagen se normaliza a JPEG vertical y se analiza reducida a 512 px mediante la varianza del Laplaciano; el umbral inicial de aceptación es 100.
+* La ubicación de alta precisión se obtiene al mismo tiempo que la toma. Una captura sin permiso o sin coordenadas no se persiste.
+* `GeminiActaOcrService` usa `gemini-2.5-flash` con JSON estructurado y campos numéricos anulables. Configure `EXPO_PUBLIC_GEMINI_API_KEY` en el entorno de Expo y restrinja esa clave a la API y aplicación correspondientes, porque las variables `EXPO_PUBLIC_*` forman parte del cliente móvil.
+* La extracción conserva sus resultados en `NEEDS_CONFIRMATION`, incluso si las cifras no cuadran; la validación aritmética estricta se aplica al confirmar manualmente.

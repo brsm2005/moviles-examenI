@@ -8,7 +8,9 @@ export interface CrearActaInput extends Omit<Acta, 'estado'> {
 export interface IActaRepository {
   guardarCaptura(acta: CrearActaInput): Promise<void>;
   obtenerPorId(actaId: string): Promise<Acta | null>;
-  listarPorEstado(estados: EstadoActa[]): Promise<Acta[]>;
+  listarPorEstado(estados: EstadoActa[], usuarioId?: string): Promise<Acta[]>;
+  marcarProcesandoOcr(actaId: string): Promise<void>;
+  devolverOcrPendiente(actaId: string): Promise<void>;
   actualizarExtraccionOcr(
     actaId: string,
     votos: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos'>,

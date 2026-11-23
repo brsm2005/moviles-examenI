@@ -66,7 +66,17 @@ export function RoleHomeScreen({
             Registrar {role === 'COORDINADOR_PROVINCIAL' ? 'coordinador de recinto' : 'veedor'}
           </Text>
         </Pressable>
-      ) : null}
+      ) : (
+        <Pressable
+          accessibilityRole="button"
+          className="min-h-14 justify-center rounded-2xl bg-primario px-5"
+          onPress={() => router.push('/(veedor)/captura')}
+        >
+          <Text className="font-bold text-white" selectable>
+            Capturar acta electoral
+          </Text>
+        </Pressable>
+      )}
       <Pressable
         accessibilityRole="button"
         className="min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"

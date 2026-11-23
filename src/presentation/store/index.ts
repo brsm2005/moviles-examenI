@@ -8,6 +8,7 @@ import type { IAuthRepository } from '@/domain/ports/IAuthRepository';
 import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
 import { authReducer } from './slices/authSlice';
+import { actaReducer } from './slices/actaSlice';
 import { territorioReducer } from './slices/territorioSlice';
 
 export function createAppStore(
@@ -18,6 +19,7 @@ export function createAppStore(
   return configureStore({
     reducer: {
       auth: authReducer,
+      actas: actaReducer,
       territorio: territorioReducer,
     },
     middleware: (getDefaultMiddleware) =>
