@@ -14,11 +14,18 @@ export interface DatosNuevoPerfil {
   rol: Exclude<RolPerfil, 'COORDINADOR_PROVINCIAL'>;
 }
 
+export interface EnlaceAutenticacion {
+  code?: string;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 export interface IAuthRepository {
   iniciarSesion(credenciales: CredencialesAcceso): Promise<Perfil>;
   obtenerPerfilActual(): Promise<Perfil | null>;
   crearUsuarioSubordinado(datos: DatosNuevoPerfil): Promise<Perfil>;
   cambiarContrasenaInicial(nuevaContrasena: string): Promise<void>;
   solicitarRecuperacionContrasena(email: string): Promise<void>;
+  procesarEnlaceAutenticacion(enlace: EnlaceAutenticacion): Promise<void>;
   cerrarSesion(): Promise<void>;
 }
