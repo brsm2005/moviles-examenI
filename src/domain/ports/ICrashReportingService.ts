@@ -5,5 +5,8 @@ export interface ContextoErrorOperativo {
 }
 
 export interface ICrashReportingService {
-  registrarError(error: Error, contexto: ContextoErrorOperativo): void;
+  registrarError(
+    error: Error,
+    contexto: ContextoErrorOperativo,
+  ): Promise<void>;
 }

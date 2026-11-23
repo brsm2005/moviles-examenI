@@ -38,12 +38,21 @@ Deno.serve(async (req) => {
     // Consultar el rol del creador en public.perfiles
     const { data: callerPerfil, error: callerPerfilError } = await supabaseUserClient
       .from('perfiles')
-      .select('rol, activo')
+      .select('rol, activo, provincia')
       .eq('id', caller.id)
       .single();
 
     if (callerPerfilError || !callerPerfil || !callerPerfil.activo) {
       return new Response(JSON.stringify({ error: 'Perfil sin permisos de acceso.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (
+      typeof callerPerfil.provincia !== 'string' ||
+      !callerPerfil.provincia.trim()
+    ) {
+      return new Response(JSON.stringify({ error: 'El perfil no tiene una provincia configurada.' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -81,6 +90,7 @@ Deno.serve(async (req) => {
         nombres_completos,
         telefono,
         rol,
+        provincia: callerPerfil.provincia,
         creado_por: caller.id,
         must_change_password: true,
       },

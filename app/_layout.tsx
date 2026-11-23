@@ -4,11 +4,27 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { Stack } from 'expo-router/stack';
+import { TerritorioRepository } from '@/data/repositories/TerritorioRepository';
+import { NetInfoConnectivityService } from '@/infrastructure/device/NetInfoConnectivityService';
+import { FirebaseCrashReportingService } from '@/infrastructure/monitoring/FirebaseCrashReportingService';
+import { SQLiteTerritorioDataSource } from '@/infrastructure/storage/SQLiteTerritorioDataSource';
 import { SupabaseAuthRepository } from '@/infrastructure/supabase/SupabaseAuthRepository';
-import { createAppStore, useAppDispatch } from '@/presentation/store';
+import { SupabaseTerritorioDataSource } from '@/infrastructure/supabase/SupabaseTerritorioDataSource';
+import {
+  createAppStore,
+  useAppDispatch,
+} from '@/presentation/store';
 import { hydrateSession } from '@/presentation/store/slices/authSlice';
 
-export const store = createAppStore(new SupabaseAuthRepository());
+export const store = createAppStore(
+  new SupabaseAuthRepository(),
+  new TerritorioRepository(
+    new SupabaseTerritorioDataSource(),
+    new SQLiteTerritorioDataSource(),
+    new NetInfoConnectivityService(),
+  ),
+  new FirebaseCrashReportingService(),
+);
 
 function AuthBootstrap() {
   const dispatch = useAppDispatch();

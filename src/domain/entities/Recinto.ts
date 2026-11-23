@@ -5,6 +5,8 @@ export interface Recinto {
   canton: string;
   parroquia: string | null;
   direccion: string | null;
+  codigoCne: string | null;
+  coordinadorRecintoId: string | null;
   centroide: {
     latitud: number;
     longitud: number;

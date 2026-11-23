@@ -3,4 +3,5 @@ export interface OrganizacionPolitica {
   nombre: string;
   sigla: string;
   color: string | null;
+  numeroLista: string | null;
 }

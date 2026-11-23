@@ -5,17 +5,29 @@ import {
   type TypedUseSelectorHook,
 } from 'react-redux';
 import type { IAuthRepository } from '@/domain/ports/IAuthRepository';
+import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
+import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
 import { authReducer } from './slices/authSlice';
+import { territorioReducer } from './slices/territorioSlice';
 
-export function createAppStore(authRepository: IAuthRepository) {
+export function createAppStore(
+  authRepository: IAuthRepository,
+  territorioRepository: ITerritorioRepository,
+  crashReportingService: ICrashReportingService,
+) {
   return configureStore({
     reducer: {
       auth: authReducer,
+      territorio: territorioReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
         thunk: {
-          extraArgument: { authRepository },
+          extraArgument: {
+            authRepository,
+            territorioRepository,
+            crashReportingService,
+          },
         },
       }),
   });

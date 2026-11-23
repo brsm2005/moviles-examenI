@@ -21,7 +21,6 @@ interface PerfilRow {
   nombres_completos: string;
   telefono: string;
   rol: string;
-  recinto_id: string | null;
   must_change_password: boolean;
   activo: boolean;
 }
@@ -36,7 +35,6 @@ const perfilRowSchema = z.object({
   nombres_completos: z.string(),
   telefono: z.string(),
   rol: z.string(),
-  recinto_id: z.uuid().nullable(),
   must_change_password: z.boolean(),
   activo: z.boolean(),
 });
@@ -50,6 +48,7 @@ function convertirFilaPerfil(
   fila: PerfilRow,
   email: string,
   correoConfirmado: boolean,
+  recintoId: string | null,
 ): Perfil {
   if (!esRolPerfil(fila.rol)) {
     throw new Error('El perfil no tiene un rol válido para ExamenI.');
@@ -65,7 +64,7 @@ function convertirFilaPerfil(
     telefono: fila.telefono,
     email,
     rol: fila.rol,
-    recintoId: fila.recinto_id,
+    recintoId,
     mustChangePassword: fila.must_change_password,
     correoConfirmado,
   };
@@ -124,7 +123,7 @@ export class SupabaseAuthRepository implements IAuthRepository {
     const { data, error } = await supabase
       .from('perfiles')
       .select(
-        'id, cedula, nombres_completos, telefono, rol, recinto_id, must_change_password, activo',
+        'id, cedula, nombres_completos, telefono, rol, must_change_password, activo',
       )
       .eq('id', user.id)
       .single();
@@ -135,10 +134,15 @@ export class SupabaseAuthRepository implements IAuthRepository {
       throw new Error(`El perfil recibido no es válido: ${parsedRow.error.message}`);
     }
 
+    const recintoId =
+      parsedRow.data.rol === 'COORDINADOR_RECINTO'
+        ? await this.obtenerRecintoAsignado(user.id)
+        : null;
     const perfil = convertirFilaPerfil(
       parsedRow.data,
       user.email ?? '',
       Boolean(user.email_confirmed_at),
+      recintoId,
     );
     await SecureStore.setItemAsync(PERFIL_CACHE_KEY, JSON.stringify(perfil));
     return perfil;
@@ -239,5 +243,15 @@ export class SupabaseAuthRepository implements IAuthRepository {
     }
 
     return parsedProfile.data;
+  }
+
+  private async obtenerRecintoAsignado(userId: string): Promise<string | null> {
+    const { data, error } = await supabase
+      .from('recintos')
+      .select('id')
+      .eq('coordinador_recinto_id', userId)
+      .maybeSingle();
+    if (error) throw error;
+    return data?.id ?? null;
   }
 }
