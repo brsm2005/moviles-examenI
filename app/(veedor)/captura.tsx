@@ -1,13 +1,13 @@
-import { CapturaActaScreen } from '@/presentation/screens/veedor/CapturaActaScreen';
+import { CapturaActaScreen } from "@/presentation/screens/veedor/CapturaActaScreen";
 import {
-  actaRepository,
-  crashReportingService,
-  imageQualityService,
-  locationService,
-  photoStorageService,
-  syncWorker,
-  territorioRepository,
-} from '../services';
+    actaRepository,
+    crashReportingService,
+    imageQualityService,
+    locationService,
+    photoStorageService,
+    syncWorker,
+    territorioRepository,
+} from "../../src/infrastructure/services";
 
 export default function CapturaActaRoute() {
   return (

@@ -1,4 +1,4 @@
-import { getCrashlytics, recordError, setAttributes } from '@react-native-firebase/crashlytics';
+import Constants from 'expo-constants';
 import type { RolPerfil } from '@/domain/entities/Perfil';
 import type { ContextoErrorOperativo, ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 
@@ -18,6 +18,13 @@ export class FirebaseCrashlyticsService implements ICrashReportingService {
       acta_id: contexto.actaId ?? 'no_aplica',
     };
     const registro = this.cola.then(async () => {
+      if (Constants.appOwnership === 'expo') {
+        console.error('Error operativo:', error, atributos);
+        return;
+      }
+
+      const { getCrashlytics, recordError, setAttributes } =
+        await import('@react-native-firebase/crashlytics');
       const instancia = getCrashlytics();
       await setAttributes(instancia, atributos);
       recordError(instancia, error);

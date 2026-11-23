@@ -22,6 +22,7 @@ En procesos anteriores la aplicación se cerraba sola sin dejar rastro del dispo
 ## Consecuencias
 * Los errores funcionales (fallo en OCR, fallo de subida a Storage) se registran como excepciones no fatales (`crashlytics().recordError(...)`) con atributos personalizados (`operacion`, `pantalla`, `acta_id`), mostrando el *stack trace* exacto en la consola de Firebase al recuperar conexión.
 * Obliga a integrar `google-services.json` en `app.json` y probar la telemetría directamente sobre el APK compilado.
+* En Expo Go, los errores operativos se escriben en `console.error` con sus atributos; no se envían a Firebase. Los development builds y APK usan Crashlytics nativo.
 
 ### Verificación de la implementación
 

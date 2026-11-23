@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { ActaOcrNotification } from '@/presentation/components/actas/ActaOcrNotification';
 import { avisarActaLista } from '@/presentation/store/slices/actaSlice';
 import { hydrateSession } from '@/presentation/store/slices/authSlice';
-import { crashReportingService, store, syncWorker } from './services';
+import { crashReportingService, store, syncWorker } from '../src/infrastructure/services';
 
 function AuthBootstrap() {
   const dispatch = useAppDispatch();

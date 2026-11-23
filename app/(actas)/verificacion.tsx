@@ -1,11 +1,11 @@
-import { VerificacionActaScreen } from '@/presentation/screens/actas/VerificacionActaScreen';
+import { VerificacionActaScreen } from "@/presentation/screens/actas/VerificacionActaScreen";
 import {
-  actaRepository,
-  crashReportingService,
-  imageQualityService,
-  photoStorageService,
-  territorioRepository,
-} from '../services';
+    actaRepository,
+    crashReportingService,
+    imageQualityService,
+    photoStorageService,
+    territorioRepository,
+} from "../../src/infrastructure/services";
 
 export default function VerificacionActaRoute() {
   return (
