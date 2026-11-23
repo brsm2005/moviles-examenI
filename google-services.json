@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "719941522735",
+    "project_id": "exameni-b15f6",
+    "storage_bucket": "exameni-b15f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:719941522735:android:15719bc5e15ae6d4487dda",
+        "android_client_info": {
+          "package_name": "com.esfot.exameni"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDooW0C5Rl3PaSs8K4praE-mxidmTRozU8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

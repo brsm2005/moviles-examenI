@@ -1,0 +1,12 @@
+﻿@import "tailwindcss";
+@import "uniwind";
+
+@theme {
+  --color-primario: #1B365D;
+  --color-secundario: #0066CC;
+  --color-fondo: #F8FAFC;
+  --color-superficie: #FFFFFF;
+  --color-texto: #0F172A;
+  --color-alerta: #DC2626;
+  --color-exito: #16A34A;
+}
