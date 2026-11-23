@@ -20,6 +20,13 @@ export interface IActaRepository {
     resultados: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos'>,
     actualizadoPor: string,
   ): Promise<void>;
+  sincronizarPendiente(actaId: string): Promise<void>;
+  corregirActaSincronizada(
+    actaId: string,
+    resultados: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos'>,
+    fotoUri: string,
+    actualizadoPor: string,
+  ): Promise<void>;
   actualizarAlertaUbicacion(actaId: string, alertaUbicacion: boolean): Promise<void>;
   marcarSincronizada(actaId: string): Promise<void>;
   obtenerParaMesa(mesaJrvId: string, dignidad: Dignidad): Promise<Acta | null>;

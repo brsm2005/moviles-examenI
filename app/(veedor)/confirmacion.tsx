@@ -1,16 +1,7 @@
-import { ConfirmarActaScreen } from '@/presentation/screens/veedor/ConfirmarActaScreen';
-import {
-  actaRepository,
-  crashReportingService,
-  territorioRepository,
-} from '../services';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 
 export default function ConfirmacionActaRoute() {
-  return (
-    <ConfirmarActaScreen
-      actaRepository={actaRepository}
-      territorioRepository={territorioRepository}
-      crashReportingService={crashReportingService}
-    />
-  );
+  const params = useLocalSearchParams<{ actaId?: string | string[] }>();
+  const actaId = Array.isArray(params.actaId) ? params.actaId[0] : params.actaId;
+  return <Redirect href={{ pathname: '/(actas)/verificacion', params: { actaId } }} />;
 }

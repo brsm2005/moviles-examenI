@@ -225,6 +225,7 @@ export function CapturaActaScreen({
         mesaJrvId: mesaSeleccionada.id,
         dignidad,
         fotoUri: fotoGuardadaUri,
+        fotoStoragePath: null,
         ubicacion,
         alertaUbicacion: false,
         totalSufragantes: null,
@@ -261,7 +262,7 @@ export function CapturaActaScreen({
 
       if (procesada?.estado === 'NEEDS_CONFIRMATION') {
         router.replace({
-          pathname: '/(veedor)/confirmacion',
+          pathname: '/(actas)/verificacion',
           params: { actaId },
         });
         return;

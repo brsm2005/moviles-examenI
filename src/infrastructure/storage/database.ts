@@ -4,7 +4,7 @@ import {
 } from 'expo-sqlite';
 
 const DATABASE_NAME = 'exameni.db';
-const DATABASE_VERSION = 4;
+const DATABASE_VERSION = 5;
 
 const INITIAL_SCHEMA = `
   CREATE TABLE IF NOT EXISTS recintos (
@@ -261,6 +261,15 @@ async function initializeAndMigrateDatabase(): Promise<SQLiteDatabase> {
         `);
       });
       await database.execAsync('PRAGMA user_version = 4;');
+    }
+
+    if (currentVersion < 5) {
+      await database.withExclusiveTransactionAsync(async (transaction) => {
+        await transaction.execAsync(
+          'ALTER TABLE actas ADD COLUMN foto_storage_path TEXT;',
+        );
+      });
+      await database.execAsync('PRAGMA user_version = 5;');
     }
 
     return database;

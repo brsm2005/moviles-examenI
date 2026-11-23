@@ -28,7 +28,7 @@ export function ActaOcrNotification() {
   const abrirConfirmacion = () => {
     modalRef.current?.dismiss();
     router.push({
-      pathname: '/(veedor)/confirmacion',
+      pathname: '/(actas)/verificacion',
       params: { actaId },
     });
     dispatch(descartarAvisoActa(actaId));

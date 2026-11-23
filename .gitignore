@@ -47,6 +47,7 @@ example
 supabase/*
 !/supabase/config.toml
 !/supabase/functions/
+!/supabase/migrations/
 supabase/functions/*
 !/supabase/functions/crear-usuario-subordinado/
 supabase/functions/crear-usuario-subordinado/*

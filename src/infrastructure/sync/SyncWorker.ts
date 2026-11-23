@@ -121,6 +121,23 @@ export class SyncWorker implements IActaProcessingService {
         });
       }
     }
+
+    const pendientesDeSincronizar = await this.actas.listarPorEstado(
+      ['PENDING_SYNC'],
+      usuarioId,
+    );
+    for (const acta of pendientesDeSincronizar) {
+      if (this.usuarioActivoId !== usuarioId) return;
+      try {
+        await this.actas.sincronizarPendiente(acta.id);
+      } catch (error) {
+        await this.crashReporting.registrarError(comoError(error), {
+          operacion: 'sincronizar_acta_confirmada',
+          pantalla: 'historial_actas',
+          actaId: acta.id,
+        });
+      }
+    }
   }
 
   private async recuperarProcesosInterrumpidos(

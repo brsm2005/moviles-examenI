@@ -9,6 +9,8 @@ import {
   actaVotosExtraidosSchema,
 } from '@/domain/schemas/actaVotosSchema';
 import type { IActaLocalDataSource } from '@/domain/ports/IActaLocalDataSource';
+import type { IActaRemoteDataSource } from '@/domain/ports/IActaRemoteDataSource';
+import type { IConnectivityService } from '@/domain/ports/IConnectivityService';
 import type {
   CrearActaInput,
   IActaRepository,
@@ -34,7 +36,11 @@ function validarVotos(datos: DatosVotos, paraConfirmar: boolean): void {
 }
 
 export class ActaRepository implements IActaRepository {
-  constructor(private readonly local: IActaLocalDataSource) {}
+  constructor(
+    private readonly local: IActaLocalDataSource,
+    private readonly remote: IActaRemoteDataSource,
+    private readonly connectivity: IConnectivityService,
+  ) {}
 
   async guardarCaptura(acta: CrearActaInput): Promise<void> {
     if (acta.estado && acta.estado !== 'PENDING_OCR') {
@@ -44,11 +50,24 @@ export class ActaRepository implements IActaRepository {
   }
 
   obtenerPorId(actaId: string): Promise<Acta | null> {
-    return this.local.obtenerPorId(actaId);
+    return this.obtenerActa(actaId);
   }
 
-  listarPorEstado(estados: EstadoActa[], usuarioId?: string): Promise<Acta[]> {
-    return this.local.listarPorEstado(estados, usuarioId);
+  async listarPorEstado(
+    estados: EstadoActa[],
+    usuarioId?: string,
+  ): Promise<Acta[]> {
+    const locales = await this.local.listarPorEstado(estados, usuarioId);
+    if (!estados.includes('SYNCED') || !(await this.connectivity.estaConectado())) {
+      return locales;
+    }
+
+    const remotas = await this.remote.listarSincronizadas();
+    const actasPorId = new Map(locales.map((acta) => [acta.id, acta]));
+    for (const acta of remotas) actasPorId.set(acta.id, acta);
+    return [...actasPorId.values()].sort((a, b) =>
+      b.actualizadoEn.localeCompare(a.actualizadoEn),
+    );
   }
 
   async marcarProcesandoOcr(actaId: string): Promise<void> {
@@ -91,6 +110,59 @@ export class ActaRepository implements IActaRepository {
     });
   }
 
+  async sincronizarPendiente(actaId: string): Promise<void> {
+    const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
+    if (acta.estado !== 'PENDING_SYNC') {
+      throw new Error('Solo se pueden sincronizar actas confirmadas pendientes.');
+    }
+    if (!(await this.connectivity.estaConectado())) return;
+
+    const fotoStoragePath = await this.remote.guardarActa(acta);
+    const sincronizada = transicionarEstadoActa(acta, 'SYNCED');
+    await this.local.actualizar({
+      ...sincronizada,
+      fotoStoragePath,
+      actualizadoEn: new Date().toISOString(),
+    });
+  }
+
+  async corregirActaSincronizada(
+    actaId: string,
+    resultados: DatosVotos,
+    fotoUri: string,
+    actualizadoPor: string,
+  ): Promise<void> {
+    validarVotos(resultados, true);
+    if (!(await this.connectivity.estaConectado())) {
+      throw new Error('Se necesita conexión para corregir un acta ya enviada.');
+    }
+
+    const acta = await this.obtenerActa(actaId);
+    if (!acta || acta.estado !== 'SYNCED') {
+      throw new Error('El acta enviada ya no está disponible para corrección.');
+    }
+
+    const corregida: Acta = {
+      ...acta,
+      ...resultados,
+      fotoUri,
+      actualizadoPor,
+      actualizadoEn: new Date().toISOString(),
+    };
+    const fotoStoragePath = await this.remote.guardarActa(corregida, {
+      motivo: 'Corrección posterior al envío',
+    });
+    const localActa = await this.local.obtenerPorId(actaId);
+    if (localActa) {
+      await this.local.actualizar({
+        ...corregida,
+        fotoUri: fotoUri.startsWith('http') ? localActa.fotoUri : fotoUri,
+        fotoStoragePath,
+        estado: 'SYNCED',
+      });
+    }
+  }
+
   async actualizarAlertaUbicacion(
     actaId: string,
     alertaUbicacion: boolean,
@@ -109,5 +181,15 @@ export class ActaRepository implements IActaRepository {
     dignidad: Dignidad,
   ): Promise<Acta | null> {
     return this.local.obtenerParaMesa(mesaJrvId, dignidad);
+  }
+
+  private async obtenerActa(actaId: string): Promise<Acta | null> {
+    const local = await this.local.obtenerPorId(actaId);
+    if (local && local.estado !== 'SYNCED') return local;
+    if (!(await this.connectivity.estaConectado())) return local;
+
+    const remota = await this.remote.obtenerPorId(actaId);
+    if (remota) return remota;
+    return local?.estado === 'SYNCED' ? null : local;
   }
 }

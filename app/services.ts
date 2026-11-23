@@ -7,6 +7,7 @@ import { expoPhotoStorageService } from '@/infrastructure/device/ExpoPhotoStorag
 import { GeminiActaOcrService } from '@/infrastructure/ai/GeminiActaOcrService';
 import { FirebaseCrashReportingService } from '@/infrastructure/monitoring/FirebaseCrashReportingService';
 import { SQLiteActaDataSource } from '@/infrastructure/storage/SQLiteActaDataSource';
+import { SupabaseActaDataSource } from '@/infrastructure/supabase/SupabaseActaDataSource';
 import { SQLiteTerritorioDataSource } from '@/infrastructure/storage/SQLiteTerritorioDataSource';
 import { SupabaseAuthRepository } from '@/infrastructure/supabase/SupabaseAuthRepository';
 import { SupabaseTerritorioDataSource } from '@/infrastructure/supabase/SupabaseTerritorioDataSource';
@@ -22,6 +23,8 @@ export const territorioRepository = new TerritorioRepository(
 );
 export const actaRepository = new ActaRepository(
   new SQLiteActaDataSource(),
+  new SupabaseActaDataSource(),
+  connectivityService,
 );
 export const photoStorageService = expoPhotoStorageService;
 export const imageQualityService = new ExpoImageQualityService();
@@ -37,4 +40,5 @@ export const store = createAppStore(
   new SupabaseAuthRepository(),
   territorioRepository,
   crashReportingService,
+  actaRepository,
 );

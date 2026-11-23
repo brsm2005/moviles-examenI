@@ -198,16 +198,27 @@ export function RecintoTerritoryScreen() {
               Asigne un veedor a varias mesas y reemplace de inmediato a quien se ausente.
             </Text>
           </View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Cerrar sesión"
-            className="min-h-12 min-w-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-3"
-            onPress={onSignOut}
-          >
-            <Text className="text-xs font-bold text-texto" selectable>
-              Salir
-            </Text>
-          </Pressable>
+          <View className="gap-2">
+            <Pressable
+              accessibilityRole="button"
+              className="min-h-11 items-center justify-center rounded-xl border border-primario bg-white px-3"
+              onPress={() => router.push('/(actas)/historial')}
+            >
+              <Text className="text-xs font-bold text-primario" selectable>
+                Historial
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cerrar sesión"
+              className="min-h-11 min-w-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-3"
+              onPress={onSignOut}
+            >
+              <Text className="text-xs font-bold text-texto" selectable>
+                Salir
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         {recinto ? (

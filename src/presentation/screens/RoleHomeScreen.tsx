@@ -67,15 +67,26 @@ export function RoleHomeScreen({
           </Text>
         </Pressable>
       ) : (
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-14 justify-center rounded-2xl bg-primario px-5"
-          onPress={() => router.push('/(veedor)/captura')}
-        >
-          <Text className="font-bold text-white" selectable>
-            Capturar acta electoral
-          </Text>
-        </Pressable>
+        <>
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-14 justify-center rounded-2xl bg-primario px-5"
+            onPress={() => router.push('/(veedor)/captura')}
+          >
+            <Text className="font-bold text-white" selectable>
+              Capturar acta electoral
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-14 justify-center rounded-2xl border border-slate-300 bg-white px-5"
+            onPress={() => router.push('/(actas)/historial')}
+          >
+            <Text className="font-bold text-texto" selectable>
+              Historial de actas
+            </Text>
+          </Pressable>
+        </>
       )}
       <Pressable
         accessibilityRole="button"

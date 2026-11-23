@@ -47,6 +47,7 @@ export default function RootLayout() {
             <Stack.Screen name="(provincial)" />
             <Stack.Screen name="(recinto)" />
             <Stack.Screen name="(veedor)" />
+            <Stack.Screen name="(actas)" />
           </Stack>
         </BottomSheetModalProvider>
       </Provider>

@@ -21,6 +21,7 @@ export interface Acta {
   dignidad: Dignidad;
   estado: EstadoActa;
   fotoUri: string;
+  fotoStoragePath: string | null;
   ubicacion: CoordenadasActa | null;
   alertaUbicacion: boolean;
   totalSufragantes: number | null;

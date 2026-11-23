@@ -21,10 +21,11 @@ En recintos rurales los veedores no tienen internet al cerrar el escrutinio; ade
 
 ## Consecuencias
 * Asegura cero pérdida de datos en recintos rurales sin cobertura y evita duplicados al reintentar envíos.
-* El flujo requiere participación activa del veedor: el OCR es automático al haber conexión, pero la validación aritmética y confirmación final siempre son manuales (`S-06`).
-* Obliga a implementar y probar la sincronización en 2 fases de forma estricta.
+* El flujo requiere participación activa del veedor: el OCR es automático al haber conexión, pero la validación aritmética y confirmación final siempre son manuales (`S-06`). Solo después de validar el formulario se encola el acta en `PENDING_SYNC`.
+* `SyncWorker` reintenta OCR y sincronización al recuperar conectividad. El envío sube la evidencia al bucket privado `actas-evidencia` y persiste acta, votos y estado `SYNCED` en una operación transaccional idempotente.
+* Las correcciones de actas enviadas se registran en `historial_correcciones`; el veedor y el coordinador de recinto están limitados a su jurisdicción por las políticas RLS.
 
 ## Implementación
 * La captura genera un UUID v4 en el cliente, copia la foto aprobada al directorio persistente de la aplicación y guarda la fila del acta en SQLite como `PENDING_OCR`.
 * `SyncWorker` observa NetInfo y reintenta también al volver la aplicación a primer plano. Al completar OCR guarda `NEEDS_CONFIRMATION` y muestra un aviso al veedor, incluso si la aplicación se había cerrado después del OCR.
-* El aviso lleva al formulario de verificación. Solo la confirmación humana válida transiciona a `PENDING_SYNC`; este flujo no sube el acta a Supabase.
+* El aviso lleva al formulario de verificación. Solo la confirmación humana válida transiciona a `PENDING_SYNC`; desde ese estado el worker sube evidencia y resultados cuando hay conexión. Una corrección posterior actualiza el mismo UUID y conserva los valores anteriores y nuevos en la bitácora.

@@ -10,6 +10,7 @@ interface ActaRow {
   dignidad: Dignidad;
   estado: EstadoActa;
   foto_uri: string;
+  foto_storage_path: string | null;
   latitud: number | null;
   longitud: number | null;
   precision_metros: number | null;
@@ -44,6 +45,7 @@ function mapearActa(row: ActaRow): Acta {
     dignidad: row.dignidad,
     estado: row.estado,
     fotoUri: row.foto_uri,
+    fotoStoragePath: row.foto_storage_path,
     ubicacion,
     alertaUbicacion: row.alerta_ubicacion === 1,
     totalSufragantes: row.total_sufragantes,
@@ -63,10 +65,10 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
     await database.runAsync(
       `INSERT INTO actas (
         id, mesa_jrv_id, dignidad, estado, foto_uri, latitud, longitud,
-        precision_metros, ubicacion_capturada_en, alerta_ubicacion,
+        foto_storage_path, precision_metros, ubicacion_capturada_en, alerta_ubicacion,
         total_sufragantes, votos_blancos, votos_nulos, votos_candidatos_json,
         creado_por, actualizado_por, creado_en, actualizado_en
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       acta.id,
       acta.mesaJrvId,
       acta.dignidad,
@@ -74,6 +76,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
       acta.fotoUri,
       acta.ubicacion?.latitud ?? null,
       acta.ubicacion?.longitud ?? null,
+      acta.fotoStoragePath,
       acta.ubicacion?.precisionMetros ?? null,
       acta.ubicacion?.capturadaEn ?? null,
       acta.alertaUbicacion ? 1 : 0,
@@ -123,7 +126,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
     const result = await database.runAsync(
       `UPDATE actas SET
         mesa_jrv_id = ?, dignidad = ?, estado = ?, foto_uri = ?, latitud = ?,
-        longitud = ?, precision_metros = ?, ubicacion_capturada_en = ?,
+        longitud = ?, foto_storage_path = ?, precision_metros = ?, ubicacion_capturada_en = ?,
         alerta_ubicacion = ?, total_sufragantes = ?, votos_blancos = ?,
         votos_nulos = ?, votos_candidatos_json = ?, actualizado_por = ?,
         actualizado_en = ?
@@ -134,6 +137,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
       acta.fotoUri,
       acta.ubicacion?.latitud ?? null,
       acta.ubicacion?.longitud ?? null,
+      acta.fotoStoragePath,
       acta.ubicacion?.precisionMetros ?? null,
       acta.ubicacion?.capturadaEn ?? null,
       acta.alertaUbicacion ? 1 : 0,
