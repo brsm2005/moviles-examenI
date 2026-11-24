@@ -54,8 +54,8 @@
           "locationWhenInUsePermission": "ExamenI registra las coordenadas GPS del lugar donde se toma el acta."
         }
       ],
-      "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics"
+      "./node_modules/@react-native-firebase/app/plugin/build",
+      "./node_modules/@react-native-firebase/crashlytics/plugin/build"
     ],
     "experiments": {
       "typedRoutes": true,
