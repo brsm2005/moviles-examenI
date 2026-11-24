@@ -10,12 +10,14 @@ import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository
 import type { IActaRepository } from '@/domain/ports/IActaRepository';
 import type { IMonitoreoProvincial } from '@/domain/ports/IMonitoreoProvincial';
 import type { IPersonalTerritorialRepository } from '@/domain/ports/IPersonalTerritorialRepository';
+import type { IUsuariosRepository } from '@/domain/ports/IUsuariosRepository';
 import { authReducer } from './slices/authSlice';
 import { actaReducer } from './slices/actaSlice';
 import { territorioReducer } from './slices/territorioSlice';
 import { historialReducer } from './slices/historialSlice';
 import { monitoreoReducer } from './slices/monitoreoSlice';
 import { personalSlice } from './slices/personalSlice';
+import usuariosReducer from './slices/usuariosSlice';
 
 export function createAppStore(
   authRepository: IAuthRepository,
@@ -24,6 +26,7 @@ export function createAppStore(
   actaRepository: IActaRepository,
   monitoreoProvincial: IMonitoreoProvincial,
   personalRepository: IPersonalTerritorialRepository,
+  usuariosRepository: IUsuariosRepository,
 ) {
   return configureStore({
     reducer: {
@@ -33,6 +36,7 @@ export function createAppStore(
       historial: historialReducer,
       monitoreo: monitoreoReducer,
       personal: personalSlice,
+      usuarios: usuariosReducer,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -44,6 +48,7 @@ export function createAppStore(
             actaRepository,
             monitoreoProvincial,
             personalRepository,
+            usuariosRepository,
           },
         },
       }),
