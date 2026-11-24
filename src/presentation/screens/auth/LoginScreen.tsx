@@ -80,6 +80,7 @@ export function LoginScreen() {
             onBlur={field.onBlur}
             onChangeText={field.onChange}
             error={fieldState.error?.message}
+            showPasswordToggle
           />
         )}
       />

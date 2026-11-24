@@ -78,6 +78,7 @@ export function ChangePasswordScreen() {
             onBlur={field.onBlur}
             onChangeText={field.onChange}
             error={fieldState.error?.message}
+            showPasswordToggle
           />
         )}
       />
@@ -95,6 +96,7 @@ export function ChangePasswordScreen() {
             onBlur={field.onBlur}
             onChangeText={field.onChange}
             error={fieldState.error?.message}
+            showPasswordToggle
           />
         )}
       />

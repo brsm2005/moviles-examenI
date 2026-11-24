@@ -150,6 +150,7 @@ export function SubordinateRegistrationScreen() {
             onBlur={field.onBlur}
             onChangeText={field.onChange}
             error={fieldState.error?.message}
+            showPasswordToggle
           />
         )}
       />

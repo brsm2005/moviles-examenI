@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 
 interface AuthShellProps {
   eyebrow?: string;
@@ -15,12 +15,16 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <ScrollView
-      className="flex-1 bg-fondo"
-      contentInsetAdjustmentBehavior="automatic"
-      keyboardShouldPersistTaps="handled"
-      contentContainerClassName="grow justify-center px-6 py-10"
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1"
     >
+      <ScrollView
+        className="flex-1 bg-fondo"
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="grow justify-center px-6 py-10"
+      >
       <View className="w-full max-w-xl self-center gap-8">
         <View className="gap-5">
           <View className="h-14 w-14 items-center justify-center rounded-2xl bg-primario">
@@ -49,6 +53,7 @@ export function AuthShell({
           Acceso seguro para personal acreditado de ExamenI
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

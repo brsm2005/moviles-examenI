@@ -9,11 +9,13 @@ import type { ICrashReportingService } from '@/domain/ports/ICrashReportingServi
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
 import type { IActaRepository } from '@/domain/ports/IActaRepository';
 import type { IMonitoreoProvincial } from '@/domain/ports/IMonitoreoProvincial';
+import type { IPersonalTerritorialRepository } from '@/domain/ports/IPersonalTerritorialRepository';
 import { authReducer } from './slices/authSlice';
 import { actaReducer } from './slices/actaSlice';
 import { territorioReducer } from './slices/territorioSlice';
 import { historialReducer } from './slices/historialSlice';
 import { monitoreoReducer } from './slices/monitoreoSlice';
+import { personalSlice } from './slices/personalSlice';
 
 export function createAppStore(
   authRepository: IAuthRepository,
@@ -21,6 +23,7 @@ export function createAppStore(
   crashReportingService: ICrashReportingService,
   actaRepository: IActaRepository,
   monitoreoProvincial: IMonitoreoProvincial,
+  personalRepository: IPersonalTerritorialRepository,
 ) {
   return configureStore({
     reducer: {
@@ -29,6 +32,7 @@ export function createAppStore(
       territorio: territorioReducer,
       historial: historialReducer,
       monitoreo: monitoreoReducer,
+      personal: personalSlice,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({
@@ -39,6 +43,7 @@ export function createAppStore(
             crashReportingService,
             actaRepository,
             monitoreoProvincial,
+            personalRepository,
           },
         },
       }),
