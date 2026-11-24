@@ -44,12 +44,21 @@ export class TerritorioRepository implements ITerritorioRepository {
     return this.local.listarMesasJrv(usuarioId, recintoId);
   }
 
+  async listarMesasAsignadas(): Promise<MesaJrv[]> {
+    const usuarioId = await this.remote.obtenerUsuarioActualId();
+    return this.local.listarMesasAsignadas(usuarioId);
+  }
+
   listarOrganizacionesPoliticas(): Promise<OrganizacionPolitica[]> {
     return this.local.listarOrganizacionesPoliticas();
   }
 
   listarCandidatos(dignidad?: Candidato['dignidad']): Promise<Candidato[]> {
     return this.local.listarCandidatos(dignidad);
+  }
+
+  obtenerCandidatosPorIds(ids: string[]): Promise<Candidato[]> {
+    return this.local.obtenerCandidatosPorIds(ids);
   }
 
   obtenerProvinciaActual(): Promise<string> {

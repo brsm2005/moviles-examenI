@@ -43,6 +43,8 @@ export interface ITerritorioLocalDataSource {
   listarRecintos(usuarioId: string): Promise<Recinto[]>;
   obtenerRecinto(usuarioId: string, recintoId: string): Promise<Recinto | null>;
   listarMesasJrv(usuarioId: string, recintoId: string): Promise<MesaJrv[]>;
+  listarMesasAsignadas(usuarioId: string): Promise<MesaJrv[]>;
   listarOrganizacionesPoliticas(): Promise<OrganizacionPolitica[]>;
   listarCandidatos(dignidad?: Candidato['dignidad']): Promise<Candidato[]>;
+  obtenerCandidatosPorIds(ids: string[]): Promise<Candidato[]>;
 }

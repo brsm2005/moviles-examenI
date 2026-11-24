@@ -147,8 +147,8 @@ export function VerificacionActaScreen({
         ) {
           throw new Error('Solo quien registró un acta pendiente puede confirmarla.');
         }
-        const listaCandidatos = await territorioRepository.listarCandidatos(
-          actaCargada.dignidad,
+        const listaCandidatos = await territorioRepository.obtenerCandidatosPorIds(
+          actaCargada.votosCandidatos.map((voto) => voto.candidatoId),
         );
         if (!activa) return;
 

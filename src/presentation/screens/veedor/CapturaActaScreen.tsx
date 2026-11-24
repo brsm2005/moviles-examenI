@@ -37,6 +37,11 @@ class FotoBorrosoError extends Error {}
 
 const dignidades: Dignidad[] = ['ALCALDE', 'PREFECTO'];
 
+function nombreMesa(mesa: MesaJrv): string {
+  const genero = mesa.genero === 'FEMENINO' ? 'F' : mesa.genero === 'MASCULINO' ? 'M' : 'Mixta';
+  return `${mesa.numero} ${genero}`;
+}
+
 function mensajeDeError(error: unknown): string {
   return error instanceof Error
     ? error.message
@@ -58,12 +63,13 @@ export function CapturaActaScreen({
   const [mesas, setMesas] = useState<MesaJrv[]>([]);
   const [mesaId, setMesaId] = useState<string | null>(null);
   const [dignidad, setDignidad] = useState<Dignidad>('ALCALDE');
-  const [resultadoCandidatos, setResultadoCandidatos] = useState<{
-    dignidad: Dignidad;
-    candidatos: Candidato[];
-  } | null>(null);
+  const [todosLosCandidatos, setTodosLosCandidatos] = useState<Candidato[]>([]);
   const [linternaActiva, setLinternaActiva] = useState(false);
   const [cargando, setCargando] = useState(false);
+  const [camaraLista, setCamaraLista] = useState(false);
+  const [errorCamara, setErrorCamara] = useState<string | null>(null);
+  const [intentoCamara, setIntentoCamara] = useState(0);
+  const [intentoCatalogo, setIntentoCatalogo] = useState(0);
   const [cargandoMesas, setCargandoMesas] = useState(true);
   const [errorMesas, setErrorMesas] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<FeedbackContent | null>(null);
@@ -72,41 +78,54 @@ export function CapturaActaScreen({
     () => mesas.find((mesa) => mesa.id === mesaId) ?? null,
     [mesaId, mesas],
   );
-  const candidatos = resultadoCandidatos?.dignidad === dignidad
-    ? resultadoCandidatos.candidatos
-    : [];
-  const cargandoCandidatos = resultadoCandidatos?.dignidad !== dignidad;
+  const candidatos = useMemo(
+    () => todosLosCandidatos.filter((candidato) => candidato.dignidad === dignidad),
+    [dignidad, todosLosCandidatos],
+  );
+  const cargandoCandidatos = cargandoMesas;
 
   useEffect(() => {
     let activa = true;
 
-    const cargarMesas = async () => {
-      if (!perfil?.recintoId) {
-        setErrorMesas('El perfil no tiene un recinto asignado.');
+    const cargarCatalogo = async () => {
+      setMesas([]);
+      setMesaId(null);
+      setTodosLosCandidatos([]);
+      setErrorMesas(null);
+      setCargandoMesas(true);
+
+      if (!perfil?.id) {
+        setErrorMesas('La sesión no está disponible. Vuelva a iniciar sesión.');
         setCargandoMesas(false);
         return;
       }
 
       try {
-        const mesasAsignadas = await territorioRepository.listarMesasJrv(
-          perfil.recintoId,
-        );
+        const sincronizado = await territorioRepository.sincronizarCatalogoTerritorial();
+        const [mesasAsignadas, candidatosDisponibles] = await Promise.all([
+          territorioRepository.listarMesasAsignadas(),
+          territorioRepository.listarCandidatos(),
+        ]);
         if (activa) {
           setMesas(mesasAsignadas);
           setMesaId(mesasAsignadas[0]?.id ?? null);
+          setTodosLosCandidatos(candidatosDisponibles);
           setErrorMesas(
             mesasAsignadas.length === 0
-              ? 'No hay mesas asignadas disponibles en este dispositivo.'
+              ? sincronizado
+                ? 'No tiene mesas asignadas.'
+                : 'No hay mesas asignadas guardadas en este dispositivo. Conéctese para actualizar.'
               : null,
           );
         }
       } catch (error) {
         if (activa) {
-          setErrorMesas(mensajeDeError(error));
+          const mensaje = error instanceof Error ? error.message : 'Error desconocido.';
+          setErrorMesas(`No se pudo cargar el catálogo electoral: ${mensaje}`);
           await crashReportingService.registrarError(
-            error instanceof Error ? error : new Error(mensajeDeError(error)),
+            error instanceof Error ? error : new Error(mensaje),
             {
-              operacion: 'consultar_mesas_veedor',
+              operacion: 'cargar_catalogo_veedor',
               pantalla: 'captura_acta',
             },
           );
@@ -116,57 +135,25 @@ export function CapturaActaScreen({
       }
     };
 
-    void cargarMesas();
+    void cargarCatalogo();
     return () => {
       activa = false;
     };
-  }, [crashReportingService, perfil?.recintoId, territorioRepository]);
-
-  useEffect(() => {
-    let activa = true;
-
-    const cargarCandidatos = async () => {
-      try {
-        const candidatosDisponibles =
-          await territorioRepository.listarCandidatos(dignidad);
-        if (activa) {
-          setResultadoCandidatos({
-            dignidad,
-            candidatos: candidatosDisponibles,
-          });
-        }
-      } catch (error) {
-        if (activa) {
-          setResultadoCandidatos({ dignidad, candidatos: [] });
-          await crashReportingService.registrarError(
-            error instanceof Error ? error : new Error(mensajeDeError(error)),
-            {
-              operacion: 'consultar_candidatos_acta',
-              pantalla: 'captura_acta',
-            },
-          );
-          setFeedback({
-            title: 'No se pudo cargar la lista electoral',
-            message: mensajeDeError(error),
-            tone: 'error',
-          });
-        }
-      }
-    };
-
-    void cargarCandidatos();
-
-    return () => {
-      activa = false;
-    };
-  }, [crashReportingService, dignidad, territorioRepository]);
+  }, [crashReportingService, intentoCatalogo, perfil?.id, territorioRepository]);
 
   const mostrarError = useCallback((titulo: string, mensaje: string) => {
     setFeedback({ title: titulo, message: mensaje, tone: 'error' });
   }, []);
 
   const capturarActa = async () => {
-    if (!cameraRef.current || !mesaSeleccionada) return;
+    if (!cameraRef.current || !camaraLista) {
+      mostrarError('Cámara no disponible', 'Espere a que la cámara esté lista e intente nuevamente.');
+      return;
+    }
+    if (!mesaSeleccionada) {
+      mostrarError('Mesa no disponible', 'Seleccione una mesa asignada antes de continuar.');
+      return;
+    }
     if (!perfil?.id) {
       mostrarError('Sesión no disponible', 'Vuelva a iniciar sesión e intente nuevamente.');
       return;
@@ -192,7 +179,7 @@ export function CapturaActaScreen({
       if (actaExistente) {
         setFeedback({
           title: 'Ya existe un acta para esta mesa',
-          message: `La dignidad ${dignidad} ya fue registrada para ${mesaSeleccionada.codigo}.`,
+          message: `La dignidad ${dignidad} ya fue registrada para la mesa ${nombreMesa(mesaSeleccionada)}.`,
           tone: 'error',
         });
         return;
@@ -333,6 +320,20 @@ export function CapturaActaScreen({
     );
   }
 
+  const motivoBloqueo = cargando
+    ? 'Procesando la captura.'
+    : cargandoMesas
+      ? 'Cargando mesas y candidatos.'
+      : !mesaSeleccionada
+        ? 'Se necesita una mesa asignada para tomar la foto.'
+        : candidatos.length !== 5
+          ? `Se requieren cinco candidatos para ${dignidad}; hay ${candidatos.length} disponibles.`
+          : errorCamara
+            ? 'La cámara no está disponible.'
+            : !camaraLista
+              ? 'Esperando a que la cámara esté lista.'
+              : null;
+
   return (
     <View className="flex-1 bg-fondo">
       <ScrollView
@@ -367,6 +368,9 @@ export function CapturaActaScreen({
                 <Pressable
                   key={mesa.id}
                   accessibilityRole="button"
+                  accessibilityLabel={`Mesa ${mesa.numero}, ${
+                    mesa.genero === 'FEMENINO' ? 'femenina' : mesa.genero === 'MASCULINO' ? 'masculina' : 'mixta'
+                  }`}
                   accessibilityState={{ selected: mesa.id === mesaId }}
                   className={`min-h-11 justify-center rounded-xl border px-4 ${
                     mesa.id === mesaId
@@ -381,7 +385,7 @@ export function CapturaActaScreen({
                     }`}
                     selectable
                   >
-                    {mesa.codigo}
+                    {nombreMesa(mesa)}
                   </Text>
                 </Pressable>
               ))}
@@ -422,19 +426,42 @@ export function CapturaActaScreen({
               ? 'Cargando candidatos...'
               : candidatos.length === 5
               ? `Candidatos cargados: ${candidatos.map((candidato) => candidato.nombresCompletos).join(', ')}`
-              : 'No está disponible la lista completa de cinco candidatos.'}
+              : `Se requieren cinco candidatos para ${dignidad}; hay ${candidatos.length} disponibles.`}
           </Text>
+          {!cargandoMesas && (errorMesas || candidatos.length !== 5) ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setIntentoCatalogo((intento) => intento + 1)}
+              className="min-h-11 justify-center"
+            >
+              <Text className="font-semibold text-primario">Actualizar mesas y candidatos</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <View className="overflow-hidden rounded-2xl bg-slate-900">
           <View className="h-[360px]">
             <CameraView
+              key={intentoCamara}
               ref={cameraRef}
-              className="flex-1"
+              style={{ flex: 1 }}
               facing="back"
               mode="picture"
               enableTorch={linternaActiva}
               animateShutter
+              onCameraReady={() => {
+                setErrorCamara(null);
+                setCamaraLista(true);
+              }}
+              onMountError={({ message }) => {
+                const detalle = message || 'Error desconocido al iniciar la cámara.';
+                setCamaraLista(false);
+                setErrorCamara(detalle);
+                void crashReportingService.registrarError(new Error(detalle), {
+                  operacion: 'iniciar_camara',
+                  pantalla: 'captura_acta',
+                });
+              }}
             />
             <View
               pointerEvents="none"
@@ -447,6 +474,25 @@ export function CapturaActaScreen({
             </View>
           </View>
         </View>
+
+        {errorCamara ? (
+          <View className="gap-2">
+            <Text className="text-sm text-red-700" selectable>
+              No se pudo iniciar la cámara: {errorCamara}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setErrorCamara(null);
+                setCamaraLista(false);
+                setIntentoCamara((intento) => intento + 1);
+              }}
+              className="min-h-11 justify-center"
+            >
+              <Text className="font-semibold text-primario">Reintentar cámara</Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View className="flex-row gap-3">
           <Pressable
@@ -462,19 +508,9 @@ export function CapturaActaScreen({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Tomar fotografía del acta"
-            disabled={
-              cargando ||
-              cargandoCandidatos ||
-              !mesaSeleccionada ||
-              candidatos.length !== 5
-            }
+            disabled={motivoBloqueo !== null}
             className={`min-h-12 flex-1 items-center justify-center rounded-xl px-4 ${
-              cargando ||
-              cargandoCandidatos ||
-              !mesaSeleccionada ||
-              candidatos.length !== 5
-                ? 'bg-slate-400'
-                : 'bg-primario'
+              motivoBloqueo ? 'bg-slate-400' : 'bg-primario'
             }`}
             onPress={() => void capturarActa()}
           >
@@ -487,6 +523,9 @@ export function CapturaActaScreen({
             )}
           </Pressable>
         </View>
+        {motivoBloqueo ? (
+          <Text className="text-sm text-slate-600" selectable>{motivoBloqueo}</Text>
+        ) : null}
         <Pressable
           accessibilityRole="button"
           className="min-h-11 items-center justify-center"

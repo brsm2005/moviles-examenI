@@ -99,10 +99,35 @@ function mapearCandidatoLocal(row: CandidatoRow): Candidato {
 
 export class SQLiteTerritorioDataSource implements ITerritorioLocalDataSource {
   async guardarCatalogo(catalogo: CatalogoTerritorial): Promise<void> {
+    await this.guardarCatalogoInterno(catalogo, true);
+  }
+
+  private async guardarCatalogoInterno(
+    catalogo: CatalogoTerritorial,
+    reemplazarAlcance: boolean,
+  ): Promise<void> {
     const database = await initializeDatabase();
     const updatedAt = new Date().toISOString();
 
     await database.withExclusiveTransactionAsync(async (transaction) => {
+      if (reemplazarAlcance) {
+        await transaction.runAsync(
+          'DELETE FROM territorio_mesas_usuario_cache WHERE usuario_id = ?',
+          catalogo.usuarioId,
+        );
+        await transaction.runAsync(
+          'DELETE FROM territorio_recintos_usuario_cache WHERE usuario_id = ?',
+          catalogo.usuarioId,
+        );
+        await transaction.runAsync(
+          `INSERT OR REPLACE INTO candidatos_historicos
+           SELECT id, organizacion_politica_id, nombres_completos, dignidad,
+                  numero_lista, updated_at
+           FROM candidatos`,
+        );
+        await transaction.runAsync('DELETE FROM candidatos');
+      }
+
       for (const recinto of catalogo.recintos) {
         await transaction.runAsync(
           `INSERT INTO recintos (
@@ -217,13 +242,13 @@ export class SQLiteTerritorioDataSource implements ITerritorioLocalDataSource {
   }
 
   async guardarRecinto(recinto: Recinto, usuarioId: string): Promise<void> {
-    await this.guardarCatalogo({
+    await this.guardarCatalogoInterno({
       usuarioId,
       recintos: [recinto],
       mesas: [],
       organizaciones: [],
       candidatos: [],
-    });
+    }, false);
   }
 
   async guardarMesas(mesas: MesaJrv[], usuarioId: string): Promise<void> {
@@ -316,6 +341,19 @@ export class SQLiteTerritorioDataSource implements ITerritorioLocalDataSource {
     return rows.map(mapearMesaLocal);
   }
 
+  async listarMesasAsignadas(usuarioId: string): Promise<MesaJrv[]> {
+    const database = await initializeDatabase();
+    const rows = await database.getAllAsync<MesaRow>(
+      `SELECT m.* FROM mesas_jrv m
+       JOIN territorio_mesas_usuario_cache scope ON scope.mesa_id = m.id
+       WHERE scope.usuario_id = ? AND m.veedor_asignado_id = ?
+       ORDER BY m.recinto_id, m.numero, m.genero`,
+      usuarioId,
+      usuarioId,
+    );
+    return rows.map(mapearMesaLocal);
+  }
+
   async listarOrganizacionesPoliticas(): Promise<OrganizacionPolitica[]> {
     const database = await initializeDatabase();
     const rows = await database.getAllAsync<OrganizacionRow>(
@@ -341,5 +379,27 @@ export class SQLiteTerritorioDataSource implements ITerritorioLocalDataSource {
            FROM candidatos ORDER BY dignidad, numero_lista`,
         );
     return rows.map(mapearCandidatoLocal);
+  }
+
+  async obtenerCandidatosPorIds(ids: string[]): Promise<Candidato[]> {
+    if (ids.length === 0) return [];
+    const database = await initializeDatabase();
+    const placeholders = ids.map(() => '?').join(', ');
+    const rows = await database.getAllAsync<CandidatoRow>(
+      `SELECT id, organizacion_politica_id, nombres_completos, dignidad, numero_lista
+       FROM candidatos WHERE id IN (${placeholders})
+       UNION ALL
+       SELECT id, organizacion_politica_id, nombres_completos, dignidad, numero_lista
+       FROM candidatos_historicos
+       WHERE id IN (${placeholders}) AND id NOT IN (SELECT id FROM candidatos)`,
+      ...ids,
+      ...ids,
+    );
+    const candidatos = new Map(rows.map((row) => [row.id, mapearCandidatoLocal(row)]));
+    return ids.map((id) => {
+      const candidato = candidatos.get(id);
+      if (!candidato) throw new Error('No se encontró un candidato asociado al acta en este dispositivo.');
+      return candidato;
+    });
   }
 }

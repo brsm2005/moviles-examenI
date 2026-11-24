@@ -84,8 +84,8 @@ export function ConfirmarActaScreen({
       try {
         const actaLocal = await actaRepository.obtenerPorId(actaId);
         if (!actaLocal) throw new Error('El acta no existe en el dispositivo.');
-        const listaCandidatos = await territorioRepository.listarCandidatos(
-          actaLocal.dignidad,
+        const listaCandidatos = await territorioRepository.obtenerCandidatosPorIds(
+          actaLocal.votosCandidatos.map((voto) => voto.candidatoId),
         );
         if (!activa) return;
 

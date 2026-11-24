@@ -4,7 +4,7 @@ import {
 } from 'expo-sqlite';
 
 const DATABASE_NAME = 'exameni.db';
-const DATABASE_VERSION = 5;
+const DATABASE_VERSION = 6;
 
 const INITIAL_SCHEMA = `
   CREATE TABLE IF NOT EXISTS recintos (
@@ -270,6 +270,26 @@ async function initializeAndMigrateDatabase(): Promise<SQLiteDatabase> {
         );
       });
       await database.execAsync('PRAGMA user_version = 5;');
+    }
+
+    if (currentVersion < 6) {
+      await database.withExclusiveTransactionAsync(async (transaction) => {
+        await transaction.execAsync(`
+          CREATE TABLE candidatos_historicos (
+            id TEXT PRIMARY KEY NOT NULL,
+            organizacion_politica_id TEXT NOT NULL,
+            nombres_completos TEXT NOT NULL,
+            dignidad TEXT NOT NULL,
+            numero_lista INTEGER,
+            updated_at TEXT NOT NULL
+          );
+          INSERT INTO candidatos_historicos
+            SELECT id, organizacion_politica_id, nombres_completos, dignidad,
+                   numero_lista, updated_at
+            FROM candidatos;
+          PRAGMA user_version = 6;
+        `);
+      });
     }
 
     return database;
