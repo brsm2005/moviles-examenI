@@ -1,6 +1,7 @@
 import { ActaRepository } from '@/data/repositories/ActaRepository';
 import { TerritorioRepository } from '@/data/repositories/TerritorioRepository';
 import { PersonalTerritorialRepository } from '@/data/repositories/PersonalTerritorialRepository';
+import { UsuariosRepository } from '@/data/repositories/UsuariosRepository';
 import { ExpoImageQualityService } from '@/infrastructure/device/nitidez';
 import { NetInfoConnectivityService } from '@/infrastructure/device/NetInfoConnectivityService';
 import { ExpoLocationService } from '@/infrastructure/device/ExpoLocationService';
@@ -9,6 +10,7 @@ import { GeminiActaOcrService } from '@/infrastructure/ai/GeminiActaOcrService';
 import { FirebaseCrashlyticsService } from '@/infrastructure/monitoring/crashlytics';
 import { SupabaseMonitoreoProvincial } from '@/infrastructure/supabase/SupabaseMonitoreoProvincial';
 import { SupabasePersonalTerritorialDataSource } from '@/infrastructure/supabase/SupabasePersonalTerritorialDataSource';
+import { SupabaseUsuariosDataSource } from '@/infrastructure/supabase/SupabaseUsuariosDataSource';
 import { SQLiteActaDataSource } from '@/infrastructure/storage/SQLiteActaDataSource';
 import { SupabaseActaDataSource } from '@/infrastructure/supabase/SupabaseActaDataSource';
 import { SQLiteTerritorioDataSource } from '@/infrastructure/storage/SQLiteTerritorioDataSource';
@@ -34,6 +36,9 @@ export const actaRepository = new ActaRepository(
 export const personalRepository = new PersonalTerritorialRepository(
   new SupabasePersonalTerritorialDataSource(supabase),
 );
+export const usuariosRepository = new UsuariosRepository(
+  new SupabaseUsuariosDataSource(supabase),
+);
 export const photoStorageService = expoPhotoStorageService;
 export const imageQualityService = new ExpoImageQualityService();
 export const locationService = new ExpoLocationService();
@@ -51,4 +56,5 @@ export const store = createAppStore(
   actaRepository,
   monitoreoProvincial,
   personalRepository,
+  usuariosRepository,
 );

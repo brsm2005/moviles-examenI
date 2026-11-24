@@ -35,7 +35,7 @@ export function createAppStore(
       territorio: territorioReducer,
       historial: historialReducer,
       monitoreo: monitoreoReducer,
-      personal: personalSlice,
+      personal: personalSlice.reducer,
       usuarios: usuariosReducer,
     },
     middleware: (getDefaultMiddleware) =>

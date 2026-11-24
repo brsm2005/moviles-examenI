@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
-import { Symbols } from 'expo-symbols';
+import { SymbolView } from 'expo-symbols';
 
 interface AuthTextFieldProps extends TextInputProps {
   label: string;
@@ -36,16 +36,20 @@ export function AuthTextField({
         />
         {shouldShowToggle ? (
           <Pressable
-            onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            onPress={() => setIsPasswordVisible((visible) => !visible)}
             className="absolute right-4 top-0 h-12 items-center justify-center"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
           >
-            <Symbols
-              name={isPasswordVisible ? 'eye.fill' : 'eye.slash.fill'}
+            <SymbolView
+              name={{
+                ios: isPasswordVisible ? 'eye.fill' : 'eye.slash.fill',
+                android: isPasswordVisible ? 'visibility' : 'visibility_off',
+                web: isPasswordVisible ? 'visibility' : 'visibility_off',
+              }}
               size={18}
-              color="#64748B"
+              tintColor="#64748B"
             />
           </Pressable>
         ) : null}
