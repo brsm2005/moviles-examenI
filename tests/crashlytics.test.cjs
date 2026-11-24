@@ -34,9 +34,43 @@ function createService(expoGo, loadCrashlytics, consoleMock = console) {
 
 const context = { pantalla: 'captura', operacion: 'guardar' };
 
+test('native initialization reports disabled collection', async () => {
+  const instance = { isCrashlyticsCollectionEnabled: false };
+  const service = createService(false, () => ({ getCrashlytics: () => instance }));
+  await assert.rejects(service.inicializar(), /desactivada/);
+  instance.isCrashlyticsCollectionEnabled = true;
+  await service.inicializar();
+});
+
 test('Expo Go reports unavailability instead of diagnostic success', async () => {
   const service = createService(true, () => assert.fail('Firebase must not load in Expo Go'));
   await assert.rejects(service.registrarErrorDiagnostico(new Error('test'), context), /Expo Go/);
+  await assert.rejects(service.provocarCrash(context), /Expo Go/);
+});
+
+test('fatal crash sets context before invoking the native crash', async () => {
+  const events = [];
+  const instance = { isCrashlyticsCollectionEnabled: true };
+  const service = createService(false, () => ({
+    getCrashlytics: () => instance,
+    setAttributes: async (target, attributes) => {
+      assert.equal(target, instance);
+      events.push(['attributes', attributes]);
+    },
+    crash: (target) => {
+      assert.equal(target, instance);
+      events.push(['crash']);
+    },
+  }));
+  service.establecerRol('VEEDOR');
+  await service.provocarCrash({ ...context, actaId: '123' });
+  assert.deepEqual(events, [
+    ['attributes', { rol: 'VEEDOR', pantalla: 'captura', operacion: 'guardar', acta_id: '123' }],
+    ['crash'],
+  ]);
+  instance.isCrashlyticsCollectionEnabled = false;
+  await assert.rejects(service.provocarCrash(context), /desactivada/);
+  assert.equal(events.length, 2);
 });
 
 test('native diagnostics preserve the order and context of concurrent reports', async () => {

@@ -16,7 +16,9 @@ export class FirebaseCrashlyticsService implements IDiagnosticoCrashReportingSer
     }
 
     const { getCrashlytics } = await import('@react-native-firebase/crashlytics');
-    getCrashlytics();
+    if (!getCrashlytics().isCrashlyticsCollectionEnabled) {
+      throw new Error('La recolección de Crashlytics está desactivada en esta compilación.');
+    }
   }
 
   async registrarError(error: Error, contexto: ContextoErrorOperativo): Promise<void> {

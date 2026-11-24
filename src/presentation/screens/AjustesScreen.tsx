@@ -95,7 +95,7 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
         <View className="gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <Text className="text-sm font-semibold text-slate-700">🔍 Para verificar:</Text>
           <Text className="text-xs text-slate-600">1. Reinicia la aplicación con conexión a Internet.</Text>
-          <Text className="text-xs text-slate-600">2. Accede a Firebase Console → Crashlytics y consulta los errores no fatales.</Text>
+          <Text className="text-xs text-slate-600">2. Accede a Firebase Console → Crashlytics y consulta los errores fatales.</Text>
           <Text className="text-xs text-slate-600">3. La entrega puede tardar varios minutos.</Text>
         </View>
       </ScrollView>
