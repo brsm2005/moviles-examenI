@@ -10,7 +10,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Image } from 'expo-image';
 import LottieView from 'lottie-react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -43,6 +43,7 @@ import type { ActaVerificacion, ActaVerificacionInput } from '@/domain/schemas/a
 import { actaVerificacionSchema } from '@/domain/schemas/actaVerificacionSchema';
 import type { FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
 import { FeedbackBottomSheet } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppSelector } from '@/presentation/store';
 
 const errorAnimation = require('../../../../assets/animations/status-error.json');
@@ -592,7 +593,7 @@ export function VerificacionActaScreen({
         <Pressable
           accessibilityRole="button"
           className="min-h-11 items-center justify-center"
-          onPress={() => router.back()}
+          onPress={() => volverSeguro('/(actas)/historial')}
         >
           <Text className="font-semibold text-slate-600" selectable>
             Volver al historial
@@ -647,7 +648,7 @@ export function VerificacionActaScreen({
           setFeedback(null);
           if (irAtrasAlCerrar) {
             setIrAtrasAlCerrar(false);
-            router.back();
+            volverSeguro('/(actas)/historial');
           }
         }}
       />

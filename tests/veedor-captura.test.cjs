@@ -42,6 +42,7 @@ function setup(repository, reports) {
     'react-native-get-random-values': {},
     uuid: { v4: () => 'acta' },
     '@/presentation/components/auth/FeedbackBottomSheet': { FeedbackBottomSheet: 'FeedbackBottomSheet' },
+    '@/presentation/navigation/volverSeguro': { volverSeguro: () => {} },
     '@/presentation/store': {
       useAppSelector: (selector) => selector({ auth: { perfil: { id: 'veedor', recintoId: null } } }),
     },

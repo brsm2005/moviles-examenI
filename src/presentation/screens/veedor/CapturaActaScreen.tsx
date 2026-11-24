@@ -20,6 +20,7 @@ import type { ILocationService } from '@/domain/ports/ILocationService';
 import type { IPhotoStorageService } from '@/domain/ports/IPhotoStorageService';
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
 import { FeedbackBottomSheet, type FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppSelector } from '@/presentation/store';
 import type { MesaJrv } from '@/domain/entities/MesaJrv';
 
@@ -310,7 +311,7 @@ export function CapturaActaScreen({
         <Pressable
           accessibilityRole="button"
           className="min-h-11 items-center justify-center"
-          onPress={() => router.back()}
+          onPress={() => volverSeguro('/(veedor)/veedor')}
         >
           <Text className="font-semibold text-slate-600" selectable>
             Volver
@@ -529,7 +530,7 @@ export function CapturaActaScreen({
         <Pressable
           accessibilityRole="button"
           className="min-h-11 items-center justify-center"
-          onPress={() => router.back()}
+          onPress={() => volverSeguro('/(veedor)/veedor')}
         >
           <Text className="font-semibold text-slate-600" selectable>
             Volver

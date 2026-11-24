@@ -4,6 +4,8 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import type { IDiagnosticoCrashReportingService } from '@/domain/ports/ICrashReportingService';
 import { FeedbackBottomSheet, type FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
 import { EditarNombreBottomSheet } from '@/presentation/components/usuarios/EditarNombreBottomSheet';
+import { routeForRole } from '@/presentation/navigation/roleRoutes';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppSelector } from '@/presentation/store';
 
 export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnosticoCrashReportingService }) {
@@ -44,7 +46,7 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
   return (
     <View className="flex-1 bg-fondo">
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-5 px-5 pb-12 pt-6">
-        <Pressable accessibilityRole="button" onPress={() => router.back()} className="min-h-11 justify-center">
+        <Pressable accessibilityRole="button" onPress={() => volverSeguro(routeForRole(perfil.rol))} className="min-h-11 justify-center">
           <Text className="font-bold text-primario">← Volver</Text>
         </Pressable>
         <Text className="text-3xl font-bold text-texto" selectable>Perfil y ajustes</Text>

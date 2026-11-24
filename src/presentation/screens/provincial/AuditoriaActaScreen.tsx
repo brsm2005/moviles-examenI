@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import type { DetalleActaAuditada, IMonitoreoProvincial } from '@/domain/ports/IMonitoreoProvincial';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 
 function mapaHtml(latitud: number, longitud: number): string {
   if (!Number.isFinite(latitud) || !Number.isFinite(longitud) ||
@@ -68,7 +69,7 @@ export function AuditoriaActaScreen({ monitoreo }: { monitoreo: IMonitoreoProvin
   return (
     <ScrollView className="flex-1 bg-fondo" contentInsetAdjustmentBehavior="automatic"
       contentContainerClassName="gap-5 px-5 pb-12 pt-6">
-      <Pressable accessibilityRole="button" onPress={() => router.back()} className="min-h-11 justify-center">
+      <Pressable accessibilityRole="button" onPress={() => volverSeguro('/(provincial)/monitoreo')} className="min-h-11 justify-center">
         <Text className="font-bold text-primario">Volver</Text>
       </Pressable>
       <Text className="text-3xl font-bold text-texto" selectable>Auditoría de acta</Text>

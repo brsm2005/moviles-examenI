@@ -1,9 +1,11 @@
 import { router } from 'expo-router';
+import { Picker } from '@expo/ui/community/picker';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import type { Dignidad } from '@/domain/entities/Candidato';
 import type { IMonitoreoProvincial } from '@/domain/ports/IMonitoreoProvincial';
 import { filtrarMonitoreo } from '@/domain/usecases/filtrarMonitoreo';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { cargarMonitoreo } from '@/presentation/store/slices/monitoreoSlice';
 
@@ -53,7 +55,7 @@ export function MonitoreoProvincialScreen({ monitoreo }: { monitoreo: IMonitoreo
     <ScrollView className="flex-1 bg-fondo" contentInsetAdjustmentBehavior="automatic"
       contentContainerClassName="gap-5 px-5 pb-12 pt-6"
       refreshControl={<RefreshControl refreshing={cargando} onRefresh={() => void dispatch(cargarMonitoreo())} />}>
-      <Pressable accessibilityRole="button" onPress={() => router.back()} className="min-h-11 justify-center">
+      <Pressable accessibilityRole="button" onPress={() => volverSeguro('/(provincial)/provincial')} className="min-h-11 justify-center">
         <Text className="font-bold text-primario">Volver</Text>
       </Pressable>
       <Text className="text-3xl font-bold text-texto" selectable>Monitoreo provincial</Text>
@@ -77,12 +79,18 @@ export function MonitoreoProvincialScreen({ monitoreo }: { monitoreo: IMonitoreo
             ))}
           </View>
           <Text className="text-lg font-bold text-texto">Recinto</Text>
-          <View className="flex-row flex-wrap gap-2">
-            <Filtro texto="Total cantonal" activo={recintoActivo === null} onPress={() => setRecinto(null)} />
-            {avances.map((item) => (
-              <Filtro key={item.recintoId} texto={item.nombre} activo={recintoActivo === item.recintoId}
-                onPress={() => setRecinto(item.recintoId)} />
-            ))}
+          <View>
+            <Picker
+              selectedValue={recintoActivo ?? ''}
+              onValueChange={(valor) => setRecinto(valor === '' ? null : valor)}
+              testID="selector-recinto"
+            >
+              <Picker.Item label="Total cantonal" value="" />
+              {avances.map((item) => (
+                <Picker.Item key={item.recintoId} label={item.nombre} value={item.recintoId} />
+              ))}
+            </Picker>
+            <Text pointerEvents="none" accessible={false} className="absolute right-4 top-4 text-slate-600">▼</Text>
           </View>
           <Text className="text-xl font-bold text-texto">Avance de mesas</Text>
           <Text className="text-sm text-slate-600">Una mesa reportada tiene al menos una acta enviada.</Text>

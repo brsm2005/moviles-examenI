@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import type { PersonalTerritorial } from '@/domain/entities/PersonalTerritorial';
 import { routeForRole } from '@/presentation/navigation/roleRoutes';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import {
   cargarCoordinadoresRecinto,
@@ -61,7 +62,7 @@ export function GestionUsuariosScreen() {
   return (
     <View className="flex-1 bg-fondo">
       <View className="gap-4 px-6 py-6">
-        <Pressable accessibilityRole="button" onPress={() => router.back()} className="min-h-11 justify-center">
+        <Pressable accessibilityRole="button" onPress={() => volverSeguro('/ajustes')} className="min-h-11 justify-center">
           <Text className="font-bold text-primario">← Volver</Text>
         </Pressable>
         <Text className="text-3xl font-bold text-texto">

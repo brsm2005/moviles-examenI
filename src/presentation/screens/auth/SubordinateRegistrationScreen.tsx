@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { router } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 import type { z } from 'zod';
 import { registroSubordinadoSchema } from '@/domain/schemas/authSchemas';
 import { AuthShell } from '@/presentation/components/auth/AuthShell';
 import { AuthTextField } from '@/presentation/components/auth/AuthTextField';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import {
   FeedbackBottomSheet,
   type FeedbackContent,
@@ -169,7 +169,7 @@ export function SubordinateRegistrationScreen() {
       <Pressable
         accessibilityRole="button"
         className="min-h-11 items-center justify-center"
-        onPress={() => router.back()}
+        onPress={() => volverSeguro('/usuarios')}
       >
         <Text className="font-semibold text-secundario" selectable>
           Volver al espacio de trabajo

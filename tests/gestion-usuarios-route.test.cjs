@@ -35,6 +35,7 @@ function setup(perfil) {
       useFocusEffect: (callback) => { focus = callback; },
     },
     '@/presentation/navigation/roleRoutes': { routeForRole: () => '/veedor' },
+    '@/presentation/navigation/volverSeguro': { volverSeguro: (route) => navigations.push(route) },
     '@/presentation/store': {
       useAppSelector: (selector) => selector({ auth: { perfil, inicializando: false } }),
       useAppDispatch: () => (action) => {
@@ -82,6 +83,9 @@ for (const [rol, expected] of [
     assert.ok(button);
     button.props.onPress();
     assert.deepEqual(component.navigations, ['/(auth)/register-subordinate']);
+    const back = find(tree, (node) => node.type === 'Pressable' && node.props.children?.props?.children === '← Volver');
+    back.props.onPress();
+    assert.deepEqual(component.navigations, ['/(auth)/register-subordinate', '/ajustes']);
   });
 }
 
