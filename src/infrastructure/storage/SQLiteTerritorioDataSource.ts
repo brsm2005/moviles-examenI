@@ -319,6 +319,21 @@ export class SQLiteTerritorioDataSource implements ITerritorioLocalDataSource {
     return row ? mapearRecintoLocal(row) : null;
   }
 
+  async obtenerRecintoPorMesa(usuarioId: string, mesaId: string): Promise<Recinto | null> {
+    const database = await initializeDatabase();
+    const row = await database.getFirstAsync<RecintoRow>(
+      `SELECT r.* FROM recintos r
+       JOIN mesas_jrv m ON m.recinto_id = r.id
+       JOIN territorio_mesas_usuario_cache mesa_scope ON mesa_scope.mesa_id = m.id
+       JOIN territorio_recintos_usuario_cache recinto_scope ON recinto_scope.recinto_id = r.id
+       WHERE m.id = ? AND mesa_scope.usuario_id = ? AND recinto_scope.usuario_id = ?`,
+      mesaId,
+      usuarioId,
+      usuarioId,
+    );
+    return row ? mapearRecintoLocal(row) : null;
+  }
+
   async listarMesasJrv(
     usuarioId: string,
     recintoId: string,

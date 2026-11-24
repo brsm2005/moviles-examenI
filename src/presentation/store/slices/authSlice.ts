@@ -6,9 +6,11 @@ import type {
   IAuthRepository,
 } from '@/domain/ports/IAuthRepository';
 import type { Perfil } from '@/domain/entities/Perfil';
+import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 
 interface AuthThunkExtra {
   authRepository: IAuthRepository;
+  crashReportingService: ICrashReportingService;
 }
 
 interface AuthState {
@@ -55,6 +57,21 @@ export const signIn = createAuthThunk<Perfil, CredencialesAcceso>(
     try {
       return await extra.authRepository.iniciarSesion(credenciales);
     } catch (error) {
+      return rejectWithValue(mensajeDeError(error));
+    }
+  },
+);
+
+export const actualizarNombrePropio = createAuthThunk<Perfil, string>(
+  'auth/actualizarNombrePropio',
+  async (nuevoNombre, { extra, rejectWithValue }) => {
+    try {
+      return await extra.authRepository.actualizarNombrePropio(nuevoNombre);
+    } catch (error) {
+      await extra.crashReportingService.registrarError(
+        error instanceof Error ? error : new Error(mensajeDeError(error)),
+        { operacion: 'actualizar_nombre_propio', pantalla: 'ajustes' },
+      );
       return rejectWithValue(mensajeDeError(error));
     }
   },
@@ -168,6 +185,11 @@ const authSlice = createSlice({
       .addCase(signIn.rejected, (state, action) => {
         state.cargando = false;
         state.error = action.payload ?? action.error.message ?? null;
+      })
+      .addCase(actualizarNombrePropio.fulfilled, (state, action) => {
+        if (state.perfil?.id === action.payload.id) {
+          state.perfil = action.payload;
+        }
       })
       .addCase(registerSubordinate.pending, (state) => {
         state.cargando = true;

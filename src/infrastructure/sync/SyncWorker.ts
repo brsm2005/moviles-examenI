@@ -7,6 +7,7 @@ import type { IActaRepository } from '@/domain/ports/IActaRepository';
 import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 import type { IConnectivityService } from '@/domain/ports/IConnectivityService';
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
+import { extraerOcrActa } from '@/domain/usecases/extraerOcrActa';
 
 function comoError(error: unknown): Error {
   return error instanceof Error
@@ -181,14 +182,7 @@ export class SyncWorker implements IActaProcessingService {
     await this.actas.marcarProcesandoOcr(actaId);
 
     try {
-      const candidatos = await this.territorio.obtenerCandidatosPorIds(
-        acta.votosCandidatos.map((voto) => voto.candidatoId),
-      );
-      const votos = await this.ocr.extraerVotos(
-        acta.fotoUri,
-        acta.dignidad,
-        candidatos,
-      );
+      const votos = await extraerOcrActa(acta, acta.fotoUri, this.territorio, this.ocr);
       await this.actas.actualizarExtraccionOcr(actaId, votos);
     } catch (error) {
       await this.actas.devolverOcrPendiente(actaId);

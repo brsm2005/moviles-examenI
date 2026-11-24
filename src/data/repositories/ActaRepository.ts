@@ -11,6 +11,9 @@ import {
 import type { IActaLocalDataSource } from '@/domain/ports/IActaLocalDataSource';
 import type { IActaRemoteDataSource } from '@/domain/ports/IActaRemoteDataSource';
 import type { IConnectivityService } from '@/domain/ports/IConnectivityService';
+import type { IActaOcrService } from '@/domain/ports/IActaOcrService';
+import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
+import { exigirTerritorioVerificado, extraerOcrActa } from '@/domain/usecases/extraerOcrActa';
 import type {
   CrearActaInput,
   IActaRepository,
@@ -40,13 +43,15 @@ export class ActaRepository implements IActaRepository {
     private readonly local: IActaLocalDataSource,
     private readonly remote: IActaRemoteDataSource,
     private readonly connectivity: IConnectivityService,
+    private readonly territorio: ITerritorioRepository,
+    private readonly ocr: IActaOcrService,
   ) {}
 
   async guardarCaptura(acta: CrearActaInput): Promise<void> {
     if (acta.estado && acta.estado !== 'PENDING_OCR') {
       throw new Error('Una captura nueva debe comenzar en estado PENDING_OCR.');
     }
-    await this.local.guardar({ ...acta, estado: 'PENDING_OCR' });
+    await this.local.guardar({ ...acta, estado: 'PENDING_OCR', verificacionTerritorial: null });
   }
 
   obtenerPorId(actaId: string): Promise<Acta | null> {
@@ -82,14 +87,27 @@ export class ActaRepository implements IActaRepository {
 
   async actualizarExtraccionOcr(
     actaId: string,
-    votos: DatosVotos,
+    votos: DatosVotos & Pick<Acta, 'verificacionTerritorial'>,
   ): Promise<void> {
     validarVotos(votos, false);
+    if (!votos.verificacionTerritorial) throw new Error('Falta el resultado de la verificación territorial.');
     const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
     const siguiente = transicionarEstadoActa(acta, 'NEEDS_CONFIRMATION');
     await this.local.actualizar({
       ...siguiente,
       ...votos,
+      actualizadoEn: new Date().toISOString(),
+    });
+  }
+
+  async reiniciarOcr(actaId: string, fotoUri: string): Promise<void> {
+    if (!fotoUri) throw new Error('Se requiere una fotografía del acta.');
+    const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
+    const siguiente = transicionarEstadoActa(acta, 'PENDING_OCR');
+    await this.local.actualizar({
+      ...siguiente,
+      fotoUri,
+      verificacionTerritorial: null,
       actualizadoEn: new Date().toISOString(),
     });
   }
@@ -101,6 +119,7 @@ export class ActaRepository implements IActaRepository {
   ): Promise<void> {
     validarVotos(resultados, true);
     const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
+    exigirTerritorioVerificado(acta.verificacionTerritorial);
     const siguiente = transicionarEstadoActa(acta, 'PENDING_SYNC');
     await this.local.actualizar({
       ...siguiente,
@@ -115,6 +134,7 @@ export class ActaRepository implements IActaRepository {
     if (acta.estado !== 'PENDING_SYNC') {
       throw new Error('Solo se pueden sincronizar actas confirmadas pendientes.');
     }
+    exigirTerritorioVerificado(acta.verificacionTerritorial);
     if (!(await this.connectivity.estaConectado())) return;
 
     const fotoStoragePath = await this.remote.guardarActa(acta);
@@ -142,10 +162,14 @@ export class ActaRepository implements IActaRepository {
       throw new Error('El acta enviada ya no está disponible para corrección.');
     }
 
+    const fotoVerificada = fotoUri.startsWith('http') ? acta.fotoUri : fotoUri;
+    const lectura = await extraerOcrActa(acta, fotoVerificada, this.territorio, this.ocr);
+    exigirTerritorioVerificado(lectura.verificacionTerritorial);
+
     const corregida: Acta = {
       ...acta,
       ...resultados,
-      fotoUri,
+      fotoUri: fotoVerificada,
       actualizadoPor,
       actualizadoEn: new Date().toISOString(),
     };
@@ -156,7 +180,7 @@ export class ActaRepository implements IActaRepository {
     if (localActa) {
       await this.local.actualizar({
         ...corregida,
-        fotoUri: fotoUri.startsWith('http') ? localActa.fotoUri : fotoUri,
+        fotoUri: fotoVerificada.startsWith('http') ? localActa.fotoUri : fotoVerificada,
         fotoStoragePath,
         estado: 'SYNCED',
       });
@@ -173,6 +197,7 @@ export class ActaRepository implements IActaRepository {
 
   async marcarSincronizada(actaId: string): Promise<void> {
     const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
+    exigirTerritorioVerificado(acta.verificacionTerritorial);
     await this.local.actualizar(transicionarEstadoActa(acta, 'SYNCED'));
   }
 

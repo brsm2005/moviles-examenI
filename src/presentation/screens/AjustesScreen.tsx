@@ -52,6 +52,8 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
         <Text className="text-3xl font-bold text-texto" selectable>Perfil y ajustes</Text>
         
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Editar nombre"
           onPress={() => setEditandoNombre(true)}
           className="gap-2 rounded-2xl border border-slate-200 bg-white p-5"
         >
@@ -104,7 +106,6 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
       </ScrollView>
 
       <EditarNombreBottomSheet
-        usuarioId={perfil.id}
         nombreActual={perfil.nombresCompletos}
         isOpen={editandoNombre}
         onClose={() => setEditandoNombre(false)}

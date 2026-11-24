@@ -13,8 +13,9 @@ export interface IActaRepository {
   devolverOcrPendiente(actaId: string): Promise<void>;
   actualizarExtraccionOcr(
     actaId: string,
-    votos: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos'>,
+    votos: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos' | 'verificacionTerritorial'>,
   ): Promise<void>;
+  reiniciarOcr(actaId: string, fotoUri: string): Promise<void>;
   confirmarParaSincronizacion(
     actaId: string,
     resultados: Pick<Acta, 'totalSufragantes' | 'votosBlancos' | 'votosNulos' | 'votosCandidatos'>,

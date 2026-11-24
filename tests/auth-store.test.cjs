@@ -48,3 +48,33 @@ test('store initializes personal state and dispatches sign-in with its repositor
   assert.deepEqual(await store.dispatch(auth.signIn(credentials)).unwrap(), profile);
   assert.deepEqual(store.getState().auth.perfil, profile);
 });
+
+test('updating the current name refreshes auth state and leaves it unchanged on failure', async () => {
+  const auth = loadModule(path.join('src', 'presentation', 'store', 'slices', 'authSlice.ts'), {});
+  const { configureStore } = require('@reduxjs/toolkit');
+  const profile = { id: 'user-id', nombresCompletos: 'Nombre anterior' };
+  let shouldFail = false;
+  const reports = [];
+  const authRepository = {
+    iniciarSesion: async () => profile,
+    actualizarNombrePropio: async (name) => {
+      if (shouldFail) throw new Error('Sin conexión');
+      return { ...profile, nombresCompletos: name };
+    },
+  };
+  const store = configureStore({
+    reducer: { auth: auth.authReducer },
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+      thunk: { extraArgument: { authRepository, crashReportingService: {
+        registrarError: async (error, context) => reports.push({ error, context }),
+      } } },
+    }),
+  });
+  await store.dispatch(auth.signIn({})).unwrap();
+  await store.dispatch(auth.actualizarNombrePropio('Nombre nuevo')).unwrap();
+  assert.equal(store.getState().auth.perfil.nombresCompletos, 'Nombre nuevo');
+  shouldFail = true;
+  await assert.rejects(store.dispatch(auth.actualizarNombrePropio('Otro nombre')).unwrap(), (error) => error === 'Sin conexión');
+  assert.equal(store.getState().auth.perfil.nombresCompletos, 'Nombre nuevo');
+  assert.equal(reports[0].context.operacion, 'actualizar_nombre_propio');
+});

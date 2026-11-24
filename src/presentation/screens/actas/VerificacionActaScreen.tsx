@@ -35,6 +35,7 @@ import Animated, {
 import type { Acta } from '@/domain/entities/Acta';
 import type { Candidato } from '@/domain/entities/Candidato';
 import type { IActaRepository } from '@/domain/ports/IActaRepository';
+import type { IActaProcessingService } from '@/domain/ports/IActaProcessingService';
 import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
 import type { IImageQualityService } from '@/domain/ports/IImageQualityService';
 import type { IPhotoStorageService } from '@/domain/ports/IPhotoStorageService';
@@ -54,6 +55,7 @@ interface VerificacionActaScreenProps {
   photoStorageService: IPhotoStorageService;
   imageQualityService: IImageQualityService;
   crashReportingService: ICrashReportingService;
+  processingService: IActaProcessingService;
 }
 
 function mostrarError(error: unknown): string {
@@ -72,6 +74,7 @@ export function VerificacionActaScreen({
   photoStorageService,
   imageQualityService,
   crashReportingService,
+  processingService,
 }: VerificacionActaScreenProps) {
   const params = useLocalSearchParams<{ actaId?: string | string[] }>();
   const actaId = Array.isArray(params.actaId) ? params.actaId[0] : params.actaId;
@@ -91,6 +94,8 @@ export function VerificacionActaScreen({
   } | null>(null);
   const cameraRef = useRef<CameraView>(null);
   const cuadreSheetRef = useRef<BottomSheetModal>(null);
+  const procesamientoActivo = useRef(false);
+  const capturaActiva = useRef(false);
 
   const {
     control,
@@ -325,26 +330,74 @@ export function VerificacionActaScreen({
     });
   };
 
-  const capturarNuevaFoto = async () => {
-    if (!acta) return;
-    if (!cameraPermission?.granted) {
-      const permiso = await requestCameraPermission();
-      if (!permiso.granted) {
+  const procesarFotografia = async (foto: string, reiniciar: boolean) => {
+    if (!acta || procesamientoActivo.current) return;
+    procesamientoActivo.current = true;
+    setGuardando(true);
+    try {
+      if (reiniciar) {
+        await actaRepository.reiniciarOcr(acta.id, foto);
+        setActa({ ...acta, estado: 'PENDING_OCR', fotoUri: foto, verificacionTerritorial: null });
+        setFotoUri(foto);
+      }
+      const resultado = await processingService.procesarActa(acta.id, false);
+      setActa(resultado);
+      setFotoUri(resultado.fotoUri);
+      if (resultado.estado === 'PENDING_OCR') {
         setFeedback({
-          title: 'Permiso de cámara requerido',
-          message: 'Habilite la cámara para reemplazar la fotografía del acta.',
+          title: 'OCR pendiente',
+          message: 'La fotografía está guardada. Se necesita conexión para verificar la provincia y el cantón.',
           tone: 'error',
         });
+      } else if (resultado.estado === 'NEEDS_CONFIRMATION') {
+        reset({
+          totalSufragantes: resultado.totalSufragantes === null ? '' : String(resultado.totalSufragantes),
+          votosBlancos: resultado.votosBlancos === null ? '' : String(resultado.votosBlancos),
+          votosNulos: resultado.votosNulos === null ? '' : String(resultado.votosNulos),
+          votosCandidatos: resultado.votosCandidatos.map((voto) => ({
+            candidatoId: voto.candidatoId,
+            votos: voto.votos === null ? '' : String(voto.votos),
+          })),
+        });
+      }
+    } catch (error) {
+      await crashReportingService.registrarError(
+        error instanceof Error ? error : new Error(mostrarError(error)),
+        { operacion: 'verificar_territorio_acta', pantalla: 'verificacion_acta', actaId: acta.id },
+      );
+      setFeedback({
+        title: 'No se pudo verificar el acta',
+        message: mostrarError(error),
+        tone: 'error',
+      });
+    } finally {
+      procesamientoActivo.current = false;
+      setGuardando(false);
+    }
+  };
+
+  const capturarNuevaFoto = async () => {
+    if (!acta || capturaActiva.current || procesamientoActivo.current) return;
+    capturaActiva.current = true;
+    setGuardando(true);
+    try {
+      if (!cameraPermission?.granted) {
+        const permiso = await requestCameraPermission();
+        if (!permiso.granted) {
+          setFeedback({
+            title: 'Permiso de cámara requerido',
+            message: 'Habilite la cámara para reemplazar la fotografía del acta.',
+            tone: 'error',
+          });
+          return;
+        }
+      }
+
+      if (!camaraActiva) {
+        setCamaraActiva(true);
         return;
       }
-    }
 
-    if (!camaraActiva) {
-      setCamaraActiva(true);
-      return;
-    }
-
-    try {
       const foto = await cameraRef.current?.takePictureAsync({ quality: 0.9 });
       if (!foto) throw new Error('La cámara no produjo una fotografía.');
       const vertical = await photoStorageService.asegurarImagenVertical(foto.uri);
@@ -358,8 +411,12 @@ export function VerificacionActaScreen({
         `${acta.id}-correccion-${Date.now()}`,
         vertical,
       );
-      setFotoUri(reemplazoUri);
       setCamaraActiva(false);
+      if (acta.estado === 'SYNCED') {
+        setFotoUri(reemplazoUri);
+      } else {
+        await procesarFotografia(reemplazoUri, true);
+      }
     } catch (error) {
       await crashReportingService.registrarError(
         error instanceof Error ? error : new Error(mostrarError(error)),
@@ -374,6 +431,9 @@ export function VerificacionActaScreen({
         message: mostrarError(error),
         tone: 'error',
       });
+    } finally {
+      capturaActiva.current = false;
+      setGuardando(false);
     }
   };
 
@@ -388,6 +448,8 @@ export function VerificacionActaScreen({
   const puedeEditar =
     acta?.estado === 'NEEDS_CONFIRMATION' || acta?.estado === 'SYNCED';
   const puedeEnviar = puedeEditar || acta?.estado === 'PENDING_SYNC';
+  const territorioBloqueado = acta && acta.estado !== 'SYNCED' &&
+    acta.verificacionTerritorial !== 'COINCIDE';
 
   return (
     <View className="flex-1 bg-fondo">
@@ -430,6 +492,15 @@ export function VerificacionActaScreen({
             <Text className="text-sm leading-5 text-blue-900" selectable>
               El acta aparecerá lista para revisión cuando termine la extracción automática. No se enviará sin su confirmación.
             </Text>
+            {acta.estado === 'PENDING_OCR' ? (
+              <Pressable accessibilityRole="button" disabled={guardando}
+                onPress={() => void procesarFotografia(acta.fotoUri, false)}
+                className="min-h-11 justify-center">
+                <Text className="font-bold text-blue-950" selectable>
+                  {guardando ? 'Procesando OCR…' : 'Reintentar OCR'}
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <>
@@ -446,13 +517,14 @@ export function VerificacionActaScreen({
                 <View className="gap-3">
                   <CameraView
                     ref={cameraRef}
-                    className="h-80 overflow-hidden rounded-xl"
+                    style={{ height: 320 }}
                     facing="back"
                     mode="picture"
                   />
                   <View className="flex-row gap-3">
                     <Pressable
                       accessibilityRole="button"
+                      disabled={guardando}
                       className="min-h-12 flex-1 items-center justify-center rounded-xl bg-primario px-3"
                       onPress={() => void capturarNuevaFoto()}
                     >
@@ -462,6 +534,7 @@ export function VerificacionActaScreen({
                     </Pressable>
                     <Pressable
                       accessibilityRole="button"
+                      disabled={guardando}
                       className="min-h-12 items-center justify-center rounded-xl border border-slate-300 px-4"
                       onPress={() => setCamaraActiva(false)}
                     >
@@ -482,9 +555,10 @@ export function VerificacionActaScreen({
                       </Text>
                     </View>
                   )}
-                  {puedeEditar ? (
+                  {puedeEditar || (acta.estado === 'PENDING_SYNC' && territorioBloqueado) ? (
                     <Pressable
                       accessibilityRole="button"
+                      disabled={guardando}
                       className="min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
                       onPress={() => void capturarNuevaFoto()}
                     >
@@ -506,6 +580,32 @@ export function VerificacionActaScreen({
                   Complete esos valores manualmente antes de confirmar.
                 </Text>
               </View>
+            ) : null}
+
+            {territorioBloqueado ? (
+              <View className="gap-2 rounded-xl border border-red-200 bg-red-50 p-4">
+                <Text className="font-bold text-red-900" selectable>
+                  {acta.verificacionTerritorial === 'NO_COINCIDE'
+                    ? 'El acta es de otra provincia o cantón'
+                    : 'Provincia y cantón sin verificar'}
+                </Text>
+                <Text className="text-sm leading-5 text-red-800" selectable>
+                  {acta.verificacionTerritorial === 'NO_COINCIDE'
+                    ? 'El envío está bloqueado. Tome una fotografía del acta de la jurisdicción correcta.'
+                    : 'El envío está bloqueado. Verifique la fotografía y vuelva a procesarla con conexión.'}
+                </Text>
+                <Pressable accessibilityRole="button" disabled={guardando || camaraActiva}
+                  onPress={() => void procesarFotografia(acta.fotoUri, true)}
+                  className="min-h-11 justify-center">
+                  <Text className="font-bold text-red-900" selectable>
+                    {guardando ? 'Verificando…' : 'Verificar provincia y cantón'}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : acta.estado === 'SYNCED' ? (
+              <Text className="text-sm leading-5 text-slate-600" selectable>
+                Al guardar, se verificará la provincia y el cantón de la fotografía antes de enviar la corrección.
+              </Text>
             ) : null}
 
             {acta.alertaUbicacion ? (
@@ -559,7 +659,7 @@ export function VerificacionActaScreen({
               </View>
             </View>
 
-            {acta.estado === 'PENDING_SYNC' ? (
+            {acta.estado === 'PENDING_SYNC' && !territorioBloqueado ? (
               <Text className="rounded-xl bg-blue-50 p-4 text-sm leading-5 text-blue-900" selectable>
                 La verificación ya está guardada. Reintente el envío o espere a que vuelva la conexión.
               </Text>
@@ -568,9 +668,9 @@ export function VerificacionActaScreen({
             {puedeEnviar ? (
               <Pressable
                 accessibilityRole="button"
-                disabled={guardando || isSubmitting}
+                disabled={guardando || isSubmitting || camaraActiva || Boolean(territorioBloqueado)}
                 className={`min-h-12 items-center justify-center rounded-xl px-4 ${
-                  guardando || isSubmitting ? 'bg-slate-400' : 'bg-primario'
+                  guardando || isSubmitting || camaraActiva || territorioBloqueado ? 'bg-slate-400' : 'bg-primario'
                 }`}
                 onPress={() => void handleSubmit(guardarResultados, revisarErrores)()}
               >

@@ -4,6 +4,7 @@ import {
     crashReportingService,
     imageQualityService,
     photoStorageService,
+    syncWorker,
     territorioRepository,
 } from "../../src/infrastructure/services";
 
@@ -15,6 +16,7 @@ export default function VerificacionActaRoute() {
       photoStorageService={photoStorageService}
       imageQualityService={imageQualityService}
       crashReportingService={crashReportingService}
+      processingService={syncWorker}
     />
   );
 }

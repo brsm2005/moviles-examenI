@@ -148,6 +148,30 @@ export class SupabaseAuthRepository implements IAuthRepository {
     return perfil;
   }
 
+  async actualizarNombrePropio(nuevoNombre: string): Promise<Perfil> {
+    const perfil = await this.obtenerPerfilActual();
+    if (!perfil) throw new Error('No hay una sesión autenticada.');
+
+    const { data, error } = await supabase.rpc('actualizar_nombre_propio', {
+      p_nombres_completos: nuevoNombre,
+      p_perfil_id: perfil.id,
+    });
+    if (error) throw error;
+    if (typeof data !== 'string' || !data.trim()) {
+      throw new Error('No se pudo confirmar el nombre actualizado.');
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    if (sessionData.session?.user.id !== perfil.id) {
+      throw new Error('La sesión cambió durante la actualización del nombre.');
+    }
+
+    const actualizado = { ...perfil, nombresCompletos: data };
+    await SecureStore.setItemAsync(PERFIL_CACHE_KEY, JSON.stringify(actualizado));
+    return actualizado;
+  }
+
   async crearUsuarioSubordinado(datos: DatosNuevoPerfil): Promise<Perfil> {
     const { data, error } =
       await supabase.functions.invoke<UsuarioSubordinadoResponse>(

@@ -15,6 +15,7 @@ export interface ITerritorioRepository {
   sincronizarCatalogoTerritorial(): Promise<boolean>;
   listarRecintos(): Promise<Recinto[]>;
   obtenerRecinto(recintoId: string): Promise<Recinto | null>;
+  obtenerRecintoPorMesa(mesaId: string): Promise<Recinto | null>;
   listarMesasJrv(recintoId: string): Promise<MesaJrv[]>;
   listarMesasAsignadas(): Promise<MesaJrv[]>;
   listarOrganizacionesPoliticas(): Promise<OrganizacionPolitica[]>;

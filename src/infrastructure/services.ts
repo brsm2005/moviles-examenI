@@ -28,10 +28,13 @@ export const territorioRepository = new TerritorioRepository(
   new SQLiteTerritorioDataSource(),
   connectivityService,
 );
+export const ocrService = new GeminiActaOcrService();
 export const actaRepository = new ActaRepository(
   new SQLiteActaDataSource(),
   new SupabaseActaDataSource(crashReportingService),
   connectivityService,
+  territorioRepository,
+  ocrService,
 );
 export const personalRepository = new PersonalTerritorialRepository(
   new SupabasePersonalTerritorialDataSource(supabase),
@@ -44,7 +47,7 @@ export const imageQualityService = new ExpoImageQualityService();
 export const locationService = new ExpoLocationService();
 export const syncWorker = new SyncWorker(
   actaRepository,
-  new GeminiActaOcrService(),
+  ocrService,
   territorioRepository,
   connectivityService,
   crashReportingService,

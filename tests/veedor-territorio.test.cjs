@@ -67,6 +67,8 @@ test('database migration archives existing candidates without removing them', as
   t.after(() => db.close());
   db.exec(`
     DROP TABLE candidatos_historicos;
+    CREATE TABLE actas (id TEXT PRIMARY KEY, estado TEXT);
+    INSERT INTO actas VALUES ('acta-anterior', 'PENDING_SYNC');
     PRAGMA user_version = 5;
     INSERT INTO organizaciones_politicas (id, nombre, sigla) VALUES ('org', 'Organización', 'O');
     INSERT INTO candidatos VALUES ('old', 'org', 'Candidato', 'ALCALDE', 1, '2026');
@@ -76,9 +78,29 @@ test('database migration archives existing candidates without removing them', as
     { 'expo-sqlite': { openDatabaseAsync: async () => adapter } },
   );
   await initializeDatabase();
-  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 6);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7);
   assert.equal(db.prepare('SELECT count(*) AS total FROM candidatos').get().total, 1);
   assert.equal(db.prepare('SELECT count(*) AS total FROM candidatos_historicos').get().total, 1);
+  assert.equal(db.prepare("SELECT verificacion_territorial FROM actas WHERE id = 'acta-anterior'").get().verificacion_territorial, null);
+});
+
+test('migration from version 6 keeps pending acts without claiming territorial verification', async (t) => {
+  const { db, adapter } = createDatabase();
+  t.after(() => db.close());
+  db.exec(`
+    CREATE TABLE actas (id TEXT PRIMARY KEY, estado TEXT);
+    INSERT INTO actas VALUES ('acta-anterior', 'PENDING_SYNC');
+    PRAGMA user_version = 6;
+  `);
+  const { initializeDatabase } = loadModule(
+    path.join('src', 'infrastructure', 'storage', 'database.ts'),
+    { 'expo-sqlite': { openDatabaseAsync: async () => adapter } },
+  );
+  await initializeDatabase();
+  const row = db.prepare("SELECT estado, verificacion_territorial FROM actas WHERE id = 'acta-anterior'").get();
+  assert.equal(row.estado, 'PENDING_SYNC');
+  assert.equal(row.verificacion_territorial, null);
+  assert.equal(db.prepare('PRAGMA user_version').get().user_version, 7);
 });
 
 test('a refreshed candidate catalog excludes stale entries while preserving old acta candidates', async (t) => {
@@ -145,15 +167,54 @@ test('capture assignments synchronize online and remain available offline, scope
 
   assert.equal(await repository.sincronizarCatalogoTerritorial(), true);
   assert.deepEqual((await repository.listarMesasAsignadas()).map((item) => item.id), ['m1', 'm3']);
+  assert.equal((await repository.obtenerRecintoPorMesa('m1')).id, 'r1');
+  assert.equal(await local.obtenerRecintoPorMesa('veedor-b', 'm1'), null);
   await local.guardarRecinto(recinto('r3'), 'veedor-a');
   assert.deepEqual((await repository.listarMesasAsignadas()).map((item) => item.id), ['m1', 'm3']);
   online = false;
   assert.equal(await repository.sincronizarCatalogoTerritorial(), false);
   assert.deepEqual((await repository.listarMesasAsignadas()).map((item) => item.id), ['m1', 'm3']);
   assert.deepEqual(await local.listarMesasAsignadas('veedor-b'), []);
+  assert.equal(await repository.obtenerRecintoPorMesa('inexistente'), null);
 
   online = true;
   catalogo = { ...catalogo, mesas: [mesa('m3', 'r2', 'veedor-a')] };
   await repository.sincronizarCatalogoTerritorial();
   assert.deepEqual((await repository.listarMesasAsignadas()).map((item) => item.id), ['m3']);
+  assert.equal(await repository.obtenerRecintoPorMesa('m1'), null);
+  catalogo = { ...catalogo, mesas: [mesa('m1', 'r1', 'veedor-a')] };
+  assert.equal((await repository.obtenerRecintoPorMesa('m1')).id, 'r1');
+});
+
+test('SQLite persists territorial verification alongside the acta', async (t) => {
+  const { db, adapter } = createDatabase();
+  t.after(() => db.close());
+  db.exec(`
+    CREATE TABLE actas (
+      id TEXT PRIMARY KEY, mesa_jrv_id TEXT, dignidad TEXT, estado TEXT,
+      foto_uri TEXT, foto_storage_path TEXT, latitud REAL, longitud REAL,
+      precision_metros REAL, ubicacion_capturada_en TEXT, alerta_ubicacion INTEGER,
+      total_sufragantes INTEGER, votos_blancos INTEGER, votos_nulos INTEGER,
+      votos_candidatos_json TEXT, creado_por TEXT, actualizado_por TEXT,
+      creado_en TEXT, actualizado_en TEXT, verificacion_territorial TEXT
+    );
+  `);
+  const { SQLiteActaDataSource } = loadModule(
+    path.join('src', 'infrastructure', 'storage', 'SQLiteActaDataSource.ts'),
+    { './database': { initializeDatabase: async () => adapter } },
+  );
+  const local = new SQLiteActaDataSource();
+  const acta = {
+    id: 'a', mesaJrvId: 'm', dignidad: 'ALCALDE', estado: 'NEEDS_CONFIRMATION',
+    fotoUri: 'file://foto', fotoStoragePath: null, ubicacion: null, alertaUbicacion: false,
+    verificacionTerritorial: 'NO_COINCIDE', totalSufragantes: null, votosBlancos: null,
+    votosNulos: null, votosCandidatos: [], creadoPor: 'u', actualizadoPor: 'u',
+    creadoEn: '2026', actualizadoEn: '2026',
+  };
+  await local.guardar(acta);
+  assert.deepEqual(await local.obtenerPorId('a'), acta);
+  await local.actualizar({ ...acta, verificacionTerritorial: 'COINCIDE' });
+  assert.equal((await local.obtenerPorId('a')).verificacionTerritorial, 'COINCIDE');
+  await local.actualizar({ ...acta, verificacionTerritorial: null });
+  assert.equal((await local.obtenerPorId('a')).verificacionTerritorial, null);
 });

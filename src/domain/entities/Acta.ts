@@ -8,6 +8,8 @@ export type EstadoActa =
   | 'PENDING_SYNC'
   | 'SYNCED';
 
+export type VerificacionTerritorial = 'COINCIDE' | 'NO_COINCIDE' | 'NO_VERIFICABLE';
+
 export interface CoordenadasActa {
   latitud: number;
   longitud: number;
@@ -24,6 +26,7 @@ export interface Acta {
   fotoStoragePath: string | null;
   ubicacion: CoordenadasActa | null;
   alertaUbicacion: boolean;
+  verificacionTerritorial: VerificacionTerritorial | null;
   totalSufragantes: number | null;
   votosBlancos: number | null;
   votosNulos: number | null;
@@ -37,8 +40,8 @@ export interface Acta {
 const transicionesActa: Record<EstadoActa, EstadoActa[]> = {
   PENDING_OCR: ['PROCESSING_OCR'],
   PROCESSING_OCR: ['NEEDS_CONFIRMATION', 'PENDING_OCR'],
-  NEEDS_CONFIRMATION: ['PENDING_SYNC'],
-  PENDING_SYNC: ['SYNCED'],
+  NEEDS_CONFIRMATION: ['PENDING_SYNC', 'PENDING_OCR'],
+  PENDING_SYNC: ['SYNCED', 'PENDING_OCR'],
   SYNCED: ['PENDING_SYNC'],
 };
 

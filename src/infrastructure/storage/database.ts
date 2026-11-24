@@ -4,7 +4,7 @@ import {
 } from 'expo-sqlite';
 
 const DATABASE_NAME = 'exameni.db';
-const DATABASE_VERSION = 6;
+const DATABASE_VERSION = 7;
 
 const INITIAL_SCHEMA = `
   CREATE TABLE IF NOT EXISTS recintos (
@@ -288,6 +288,18 @@ async function initializeAndMigrateDatabase(): Promise<SQLiteDatabase> {
                    numero_lista, updated_at
             FROM candidatos;
           PRAGMA user_version = 6;
+        `);
+      });
+    }
+
+    if (currentVersion < 7) {
+      await database.withExclusiveTransactionAsync(async (transaction) => {
+        await transaction.execAsync(`
+          ALTER TABLE actas ADD COLUMN verificacion_territorial TEXT
+            CHECK (verificacion_territorial IS NULL OR verificacion_territorial IN (
+              'COINCIDE', 'NO_COINCIDE', 'NO_VERIFICABLE'
+            ));
+          PRAGMA user_version = 7;
         `);
       });
     }

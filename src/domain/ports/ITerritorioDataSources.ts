@@ -42,6 +42,7 @@ export interface ITerritorioLocalDataSource {
   guardarMesas(mesas: MesaJrv[], usuarioId: string): Promise<void>;
   listarRecintos(usuarioId: string): Promise<Recinto[]>;
   obtenerRecinto(usuarioId: string, recintoId: string): Promise<Recinto | null>;
+  obtenerRecintoPorMesa(usuarioId: string, mesaId: string): Promise<Recinto | null>;
   listarMesasJrv(usuarioId: string, recintoId: string): Promise<MesaJrv[]>;
   listarMesasAsignadas(usuarioId: string): Promise<MesaJrv[]>;
   listarOrganizacionesPoliticas(): Promise<OrganizacionPolitica[]>;

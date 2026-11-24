@@ -16,6 +16,7 @@ interface ActaRow {
   precision_metros: number | null;
   ubicacion_capturada_en: string | null;
   alerta_ubicacion: number;
+  verificacion_territorial: Acta['verificacionTerritorial'];
   total_sufragantes: number | null;
   votos_blancos: number | null;
   votos_nulos: number | null;
@@ -48,6 +49,7 @@ function mapearActa(row: ActaRow): Acta {
     fotoStoragePath: row.foto_storage_path,
     ubicacion,
     alertaUbicacion: row.alerta_ubicacion === 1,
+    verificacionTerritorial: row.verificacion_territorial,
     totalSufragantes: row.total_sufragantes,
     votosBlancos: row.votos_blancos,
     votosNulos: row.votos_nulos,
@@ -67,8 +69,8 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
         id, mesa_jrv_id, dignidad, estado, foto_uri, latitud, longitud,
         foto_storage_path, precision_metros, ubicacion_capturada_en, alerta_ubicacion,
         total_sufragantes, votos_blancos, votos_nulos, votos_candidatos_json,
-        creado_por, actualizado_por, creado_en, actualizado_en
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        creado_por, actualizado_por, creado_en, actualizado_en, verificacion_territorial
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       acta.id,
       acta.mesaJrvId,
       acta.dignidad,
@@ -88,6 +90,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
       acta.actualizadoPor,
       acta.creadoEn,
       acta.actualizadoEn,
+      acta.verificacionTerritorial,
     );
   }
 
@@ -129,7 +132,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
         longitud = ?, foto_storage_path = ?, precision_metros = ?, ubicacion_capturada_en = ?,
         alerta_ubicacion = ?, total_sufragantes = ?, votos_blancos = ?,
         votos_nulos = ?, votos_candidatos_json = ?, actualizado_por = ?,
-        actualizado_en = ?
+        actualizado_en = ?, verificacion_territorial = ?
       WHERE id = ?`,
       acta.mesaJrvId,
       acta.dignidad,
@@ -147,6 +150,7 @@ export class SQLiteActaDataSource implements IActaLocalDataSource {
       JSON.stringify(acta.votosCandidatos),
       acta.actualizadoPor,
       acta.actualizadoEn,
+      acta.verificacionTerritorial,
       acta.id,
     );
     if (result.changes === 0) {

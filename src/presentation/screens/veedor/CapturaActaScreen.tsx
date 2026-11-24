@@ -216,6 +216,7 @@ export function CapturaActaScreen({
         fotoStoragePath: null,
         ubicacion,
         alertaUbicacion: false,
+        verificacionTerritorial: null,
         totalSufragantes: null,
         votosBlancos: null,
         votosNulos: null,

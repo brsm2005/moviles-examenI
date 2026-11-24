@@ -23,6 +23,7 @@ export interface EnlaceAutenticacion {
 export interface IAuthRepository {
   iniciarSesion(credenciales: CredencialesAcceso): Promise<Perfil>;
   obtenerPerfilActual(): Promise<Perfil | null>;
+  actualizarNombrePropio(nuevoNombre: string): Promise<Perfil>;
   crearUsuarioSubordinado(datos: DatosNuevoPerfil): Promise<Perfil>;
   cambiarContrasenaInicial(nuevaContrasena: string): Promise<void>;
   solicitarRecuperacionContrasena(email: string): Promise<void>;

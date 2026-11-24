@@ -69,6 +69,7 @@ async function mapearActa(row: ActaRow): Promise<Acta> {
       capturadaEn: row.capturada_offline_at,
     },
     alertaUbicacion: row.alerta_ubicacion,
+    verificacionTerritorial: null,
     totalSufragantes: row.total_sufragantes,
     votosBlancos: row.votos_blancos,
     votosNulos: row.votos_nulos,

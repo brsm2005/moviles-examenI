@@ -39,6 +39,14 @@ export class TerritorioRepository implements ITerritorioRepository {
     return this.local.obtenerRecinto(usuarioId, recintoId);
   }
 
+  async obtenerRecintoPorMesa(mesaId: string): Promise<Recinto | null> {
+    const usuarioId = await this.remote.obtenerUsuarioActualId();
+    const recinto = await this.local.obtenerRecintoPorMesa(usuarioId, mesaId);
+    if (recinto) return recinto;
+    if (!(await this.sincronizarCatalogoTerritorial())) return null;
+    return this.local.obtenerRecintoPorMesa(usuarioId, mesaId);
+  }
+
   async listarMesasJrv(recintoId: string): Promise<MesaJrv[]> {
     const usuarioId = await this.remote.obtenerUsuarioActualId();
     return this.local.listarMesasJrv(usuarioId, recintoId);

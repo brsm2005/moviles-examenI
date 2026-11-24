@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { perfilSchema } from './perfilSchema';
 
 export const gestorUsuariosSchema = z.object({
   id: z.string().uuid(),
@@ -36,5 +37,5 @@ export const datosEditarUsuarioSchema = z
   });
 
 export const editarNombreSchema = z.object({
-  nuevoNombre: z.string().min(3, 'Nombre debe tener al menos 3 caracteres.'),
+  nuevoNombre: perfilSchema.shape.nombresCompletos,
 });
