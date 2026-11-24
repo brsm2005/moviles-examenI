@@ -13,3 +13,7 @@ export interface ICrashReportingService {
     contexto: ContextoErrorOperativo,
   ): Promise<void>;
 }
+
+export interface IDiagnosticoCrashReportingService extends ICrashReportingService {
+  registrarErrorDiagnostico(error: Error, contexto: ContextoErrorOperativo): Promise<void>;
+}

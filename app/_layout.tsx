@@ -10,15 +10,6 @@ import { avisarActaLista } from '@/presentation/store/slices/actaSlice';
 import { hydrateSession } from '@/presentation/store/slices/authSlice';
 import { crashReportingService, store, syncWorker } from '../src/infrastructure/services';
 
-// Inicializar Firebase (opcional, pero seguro)
-async function initializeFirebase() {
-  try {
-    await import('@react-native-firebase/app');
-  } catch (error) {
-    console.debug('Firebase initialization (optional for Expo Go):', error);
-  }
-}
-
 function AuthBootstrap() {
   const dispatch = useAppDispatch();
 
@@ -51,7 +42,9 @@ function ActaWorkerBootstrap() {
 
 export default function RootLayout() {
   useEffect(() => {
-    void initializeFirebase();
+    void crashReportingService.inicializar().catch((error: unknown) => {
+      console.warn('[Crashlytics] No se pudo inicializar:', error);
+    });
   }, []);
 
   return (
