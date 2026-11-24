@@ -54,4 +54,26 @@ export class FirebaseCrashlyticsService implements IDiagnosticoCrashReportingSer
     this.cola = registro.catch(() => {});
     return registro;
   }
+
+  async provocarCrash(contexto: ContextoErrorOperativo): Promise<void> {
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) {
+      throw new Error('Crashlytics no está disponible en Expo Go; use una compilación nativa.');
+    }
+
+    const { getCrashlytics, setAttributes, crash } = await import(
+      '@react-native-firebase/crashlytics'
+    );
+    const crashlytics = getCrashlytics();
+    if (!crashlytics.isCrashlyticsCollectionEnabled) {
+      throw new Error('La recolección de Crashlytics está desactivada en esta compilación.');
+    }
+
+    await setAttributes(crashlytics, {
+      rol: contexto.rol ?? this.rol ?? 'sin_sesion',
+      pantalla: contexto.pantalla,
+      operacion: contexto.operacion,
+      acta_id: contexto.actaId ?? 'no_aplica',
+    });
+    crash(crashlytics);
+  }
 }

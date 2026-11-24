@@ -21,20 +21,15 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
   const simular = async () => {
     setEnviando(true);
     try {
-      await crashReporting.registrarErrorDiagnostico(new Error('Error de prueba manual de Crashlytics'), {
+      await crashReporting.provocarCrash({
         rol: perfil.rol,
         pantalla: 'ajustes',
-        operacion: 'simular_error_crashlytics',
-      });
-      setFeedback({
-        title: 'Prueba enviada al SDK',
-        message: 'Se solicitó el registro del error. Esto no confirma su entrega a Firebase; reinicie la app y consulte Crashlytics más tarde.',
-        tone: 'success',
+        operacion: 'simular_crash_fatal_crashlytics',
       });
     } catch (error) {
-      console.error('[AjustesScreen] Error al registrar prueba:', error);
+      console.error('[AjustesScreen] Error al iniciar prueba fatal:', error);
       setFeedback({
-        title: 'No se pudo registrar la prueba',
+        title: 'No se pudo simular el crash',
         message: error instanceof Error ? error.message : 'Compruebe la configuración nativa de Firebase.',
         tone: 'error',
       });
@@ -85,7 +80,7 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
           <Text className="text-xs text-amber-800">• Conexión a Internet (aunque el registro se guarda offline)</Text>
         </View>
         <Text className="text-sm leading-5 text-slate-600">
-          Solicita el registro de un error no fatal de prueba; no interrumpe la aplicación.
+          Provoca un cierre fatal controlado para comprobar la captura de crashes.
         </Text>
         <Pressable
           accessibilityRole="button"
@@ -94,7 +89,7 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
           className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
         >
           <Text className="font-bold text-white">
-            {enviando ? 'Registrando error…' : 'Simular error para Crashlytics'}
+            {enviando ? 'Provocando crash…' : 'Simular crash fatal'}
           </Text>
         </Pressable>
         <View className="gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
