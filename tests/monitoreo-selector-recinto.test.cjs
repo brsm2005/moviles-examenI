@@ -33,6 +33,15 @@ function setup() {
       { recintoId: 'a1', dignidad: 'ALCALDE', candidatoId: 'c', candidato: 'Candidato', organizacion: 'O', lista: '1', votos: 10 },
       { recintoId: 'a2', dignidad: 'ALCALDE', candidatoId: 'c', candidato: 'Candidato', organizacion: 'O', lista: '1', votos: 20 },
       { recintoId: 'b1', dignidad: 'ALCALDE', candidatoId: 'c', candidato: 'Candidato', organizacion: 'O', lista: '1', votos: 30 },
+      { recintoId: 'a1', dignidad: 'PREFECTO', candidatoId: 'p', candidato: 'Prefecto', organizacion: 'P', lista: '2', votos: 5 },
+      { recintoId: 'a2', dignidad: 'PREFECTO', candidatoId: 'p', candidato: 'Prefecto', organizacion: 'P', lista: '2', votos: 15 },
+    ],
+    votosBlancosNulos: [
+      { recintoId: 'a1', dignidad: 'ALCALDE', blancos: 3, nulos: 2 },
+      { recintoId: 'a2', dignidad: 'ALCALDE', blancos: 5, nulos: 10 },
+      { recintoId: 'a1', dignidad: 'PREFECTO', blancos: 1, nulos: 4 },
+      { recintoId: 'a2', dignidad: 'PREFECTO', blancos: 0, nulos: 2 },
+      { recintoId: 'b1', dignidad: 'ALCALDE', blancos: 50, nulos: 60 },
     ],
     actas: [
       { id: 'acta-a1', recintoId: 'a1', mesa: 1, genero: 'F', dignidad: 'ALCALDE' },
@@ -43,6 +52,7 @@ function setup() {
   let stateIndex = 0;
   const jsx = (type, props) => ({ type, props });
   const filtrar = loadModule(path.join('src', 'domain', 'usecases', 'filtrarMonitoreo.ts'), {});
+  const chartUtils = loadModule(path.join('src', 'presentation', 'components', 'monitoreo', 'chartUtils.ts'), {});
   const Picker = Object.assign('Picker', { Item: 'PickerItem' });
   const screen = loadModule(path.join('src', 'presentation', 'screens', 'provincial', 'MonitoreoProvincialScreen.tsx'), {
     'react/jsx-runtime': { jsx, jsxs: jsx, Fragment: 'Fragment' },
@@ -62,6 +72,8 @@ function setup() {
     'expo-router': { router: {} },
     '@expo/ui/community/picker': { Picker },
     '@/domain/usecases/filtrarMonitoreo': filtrar,
+    '@/presentation/components/monitoreo/chartUtils': chartUtils,
+    '@/presentation/components/monitoreo/PieChartResultados': { PieChartResultados: 'PieChartResultados' },
     '@/presentation/navigation/volverSeguro': { volverSeguro: () => {} },
     '@/presentation/store': {
       useAppSelector: (selector) => selector({ monitoreo: { datos, cargando: false, error: null } }),
@@ -122,4 +134,24 @@ test('changing canton resets the selected recinto and updates the available opti
   const picker = find(tree, (node) => node.props?.testID === 'selector-recinto');
   assert.equal(picker.props.selectedValue, '');
   assert.deepEqual(picker.props.children.flat().map((item) => item.props.label), ['Total cantonal', 'Recinto tres']);
+  const prefectura = find(tree, (node) => node.type === 'PieChartResultados' && node.props.titulo === 'Prefectura');
+  assert.deepEqual(prefectura.props.datos.map((dato) => dato.votos), [0, 0]);
+});
+
+test('both charts use the selected scope and preserve candidate colors after filtering', () => {
+  const component = setup();
+  let tree = component.render();
+  const chart = (title) => find(tree, (node) => node.type === 'PieChartResultados' && node.props.titulo === title);
+  const alcaldeInicial = chart('Alcaldía').props.datos[0];
+  assert.equal(alcaldeInicial.votos, 30);
+  assert.equal(chart('Prefectura').props.datos[0].votos, 20);
+  assert.deepEqual(chart('Alcaldía').props.datos.slice(-2).map((dato) => dato.votos), [8, 12]);
+  assert.deepEqual(chart('Prefectura').props.datos.slice(-2).map((dato) => dato.votos), [1, 6]);
+  find(tree, (node) => node.props?.testID === 'selector-recinto').props.onValueChange('a2');
+  tree = component.render();
+  assert.equal(chart('Alcaldía').props.datos[0].votos, 20);
+  assert.equal(chart('Prefectura').props.datos[0].votos, 15);
+  assert.equal(chart('Alcaldía').props.datos[0].color, alcaldeInicial.color);
+  assert.deepEqual(chart('Alcaldía').props.datos.slice(-2).map((dato) => dato.votos), [5, 10]);
+  assert.deepEqual(chart('Prefectura').props.datos.slice(-2).map((dato) => dato.votos), [0, 2]);
 });

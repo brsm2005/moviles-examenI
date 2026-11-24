@@ -23,6 +23,13 @@ export interface ResultadoProvincial {
   votos: number;
 }
 
+export interface VotosBlancosNulosRecinto {
+  recintoId: string;
+  dignidad: Dignidad;
+  blancos: number;
+  nulos: number;
+}
+
 export interface ActaAuditada {
   id: string;
   recintoId: string;
@@ -42,6 +49,7 @@ export interface DetalleActaAuditada extends ActaAuditada {
 export interface DatosMonitoreo {
   avances: AvanceRecinto[];
   resultados: ResultadoProvincial[];
+  votosBlancosNulos: VotosBlancosNulosRecinto[];
   actas: ActaAuditada[];
 }
 

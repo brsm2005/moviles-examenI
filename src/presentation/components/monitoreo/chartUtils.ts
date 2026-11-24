@@ -1,3 +1,4 @@
+import type { ResultadoProvincial } from '@/domain/ports/IMonitoreoProvincial';
 import type { ResultadoVoto } from '@/presentation/components/monitoreo/PieChartResultados';
 
 // Paleta de colores consistente con el diseño de la app
@@ -16,23 +17,23 @@ export function obtenerColorPorIndice(indice: number): string {
   return COLORES_CANDIDATOS[indice % COLORES_CANDIDATOS.length];
 }
 
-export interface ResultadoMonitoreo {
-  candidatoId: string;
-  candidato: string;
-  organizacion: string;
-  lista: string | null;
-  votos: number;
-  dignidad: 'ALCALDE' | 'PREFECTO';
-}
-
 export function mapearResultadosAGrafico(
-  resultados: ResultadoMonitoreo[],
+  resultados: ResultadoProvincial[],
+  candidatosOrdenados: readonly string[] = resultados.map((resultado) => resultado.candidatoId),
 ): ResultadoVoto[] {
+  const indices = new Map(candidatosOrdenados.map((id, indice) => [id, indice]));
   return resultados.map((r, indice) => ({
     id: r.candidatoId,
     nombre: r.candidato,
-    organizacion: r.organizacion,
+    organizacion: r.lista ? `${r.organizacion} · Lista ${r.lista}` : r.organizacion,
     votos: r.votos,
-    color: obtenerColorPorIndice(indice),
+    color: obtenerColorPorIndice(indices.get(r.candidatoId) ?? indice),
   }));
+}
+
+export function mapearVotosBlancosNulos(blancos: number, nulos: number): ResultadoVoto[] {
+  return [
+    { id: 'votos-blancos', nombre: 'Votos blancos', organizacion: '', votos: blancos, color: '#64748B' },
+    { id: 'votos-nulos', nombre: 'Votos nulos', organizacion: '', votos: nulos, color: '#292524' },
+  ];
 }

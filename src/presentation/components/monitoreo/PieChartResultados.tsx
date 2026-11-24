@@ -26,7 +26,7 @@ export function PieChartResultados({
     return (
       <View className="gap-2 rounded-2xl border border-slate-200 bg-white p-6">
         <Text className="text-lg font-bold text-texto">{titulo}</Text>
-        <Text className="text-sm text-slate-600">Sin datos disponibles</Text>
+        <Text className="text-sm text-slate-600">Sin votos registrados en esta selección.</Text>
       </View>
     );
   }
@@ -38,7 +38,7 @@ export function PieChartResultados({
   let currentAngle = -90;
   const slices: { data: ResultadoVoto; startAngle: number; endAngle: number }[] = [];
 
-  datos.forEach((d) => {
+  datos.filter((d) => d.votos > 0).forEach((d) => {
     const angle = (d.votos / totalVotos) * 360;
     const endAngle = currentAngle + angle;
     slices.push({ data: d, startAngle: currentAngle, endAngle });
@@ -77,28 +77,27 @@ export function PieChartResultados({
       <Text className="text-lg font-bold text-texto">{titulo}</Text>
 
       <View className="items-center">
-        <Svg width={240} height={240}>
-          {slices.map((slice, idx) => (
-            <Path
-              key={idx}
-              d={createArcPath(
-                slice.startAngle,
-                slice.endAngle,
-                RADIUS,
-                CENTER_X,
-                CENTER_Y,
-              )}
-              fill={slice.data.color}
-            />
-          ))}
-          {/* Inner circle for donut effect */}
-          <Circle
-            cx={CENTER_X}
-            cy={CENTER_Y}
-            r={RADIUS * 0.6}
-            fill="white"
-          />
-        </Svg>
+        <View className="w-full" style={{ maxWidth: 208, aspectRatio: 1 }}>
+          <Svg width="100%" height="100%" viewBox="0 0 240 240" accessible={false}>
+            {slices.map((slice) =>
+              slice.data.votos === totalVotos ? (
+                <Circle key={slice.data.id} cx={CENTER_X} cy={CENTER_Y} r={RADIUS} fill={slice.data.color} />
+              ) : (
+                <Path
+                  key={slice.data.id}
+                  d={createArcPath(
+                    slice.startAngle,
+                    slice.endAngle,
+                    RADIUS,
+                    CENTER_X,
+                    CENTER_Y,
+                  )}
+                  fill={slice.data.color}
+                />
+              ),
+            )}
+          </Svg>
+        </View>
       </View>
 
       {mostrarLeyenda ? (
@@ -116,19 +115,19 @@ export function PieChartResultados({
                     style={{ backgroundColor: d.color }}
                   />
                   <View className="flex-1">
-                    <Text className="font-semibold text-texto">{d.nombre}</Text>
-                    <Text className="text-xs text-slate-600">{d.organizacion}</Text>
+                    <Text className="font-semibold text-texto" selectable>{d.nombre}</Text>
+                    {d.organizacion ? <Text className="text-xs text-slate-600" selectable>{d.organizacion}</Text> : null}
                   </View>
                 </View>
                 <View className="items-end">
-                  <Text className="font-bold text-texto">{d.votos.toLocaleString()}</Text>
-                  <Text className="text-xs text-slate-600">{porcentaje}%</Text>
+                  <Text className="font-bold text-texto" selectable>{d.votos.toLocaleString()}</Text>
+                  <Text className="text-xs text-slate-600" selectable>{porcentaje}%</Text>
                 </View>
               </View>
             );
           })}
           <View className="border-t border-slate-200 pt-2">
-            <Text className="text-sm font-semibold text-slate-700">
+            <Text className="text-sm font-semibold text-slate-700" selectable>
               Total: {totalVotos.toLocaleString()} votos
             </Text>
           </View>

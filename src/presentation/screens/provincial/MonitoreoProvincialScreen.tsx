@@ -5,6 +5,8 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } 
 import type { Dignidad } from '@/domain/entities/Candidato';
 import type { IMonitoreoProvincial } from '@/domain/ports/IMonitoreoProvincial';
 import { filtrarMonitoreo } from '@/domain/usecases/filtrarMonitoreo';
+import { mapearResultadosAGrafico, mapearVotosBlancosNulos } from '@/presentation/components/monitoreo/chartUtils';
+import { PieChartResultados } from '@/presentation/components/monitoreo/PieChartResultados';
 import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { cargarMonitoreo } from '@/presentation/store/slices/monitoreoSlice';
@@ -70,8 +72,36 @@ export function MonitoreoProvincialScreen({ monitoreo }: { monitoreo: IMonitoreo
       ) : null}
       {!datos && cargando ? <ActivityIndicator size="large" color="#1B365D" /> : null}
       {datos && cantones.length === 0 ? <Text className="text-slate-600">No hay recintos disponibles.</Text> : null}
-      {datos && cantones.length > 0 ? (
+      {datos && seleccion && cantones.length > 0 ? (
         <>
+          <Text className="text-xl font-bold text-texto">Resultados gráficos</Text>
+          <Text className="text-sm text-slate-600" selectable>
+            {canton} · {recintoActivo ? avances.find((item) => item.recintoId === recintoActivo)?.nombre : 'Total cantonal'}
+          </Text>
+          <Text className="text-sm leading-5 text-slate-600">
+            Porcentajes sobre el total de votos registrados, incluidos blancos y nulos.
+          </Text>
+          {(['ALCALDE', 'PREFECTO'] as Dignidad[]).map((dignidad) => {
+            const candidatosOrdenados = [...new Set(
+              datos.resultados.filter((resultado) => resultado.dignidad === dignidad).map((resultado) => resultado.candidatoId),
+            )].sort();
+            return (
+              <PieChartResultados
+                key={dignidad}
+                titulo={dignidad === 'ALCALDE' ? 'Alcaldía' : 'Prefectura'}
+                datos={[
+                  ...mapearResultadosAGrafico(
+                    resultados.filter((resultado) => resultado.dignidad === dignidad),
+                    candidatosOrdenados,
+                  ),
+                  ...mapearVotosBlancosNulos(
+                    seleccion.votosBlancosNulos[dignidad].blancos,
+                    seleccion.votosBlancosNulos[dignidad].nulos,
+                  ),
+                ]}
+              />
+            );
+          })}
           <Text className="text-lg font-bold text-texto">Cantón</Text>
           <View className="flex-row flex-wrap gap-2">
             {cantones.map((item) => (

@@ -5,6 +5,7 @@ import type {
   DetalleActaAuditada,
   IMonitoreoProvincial,
   ResultadoProvincial,
+  VotosBlancosNulosRecinto,
 } from '@/domain/ports/IMonitoreoProvincial';
 import type { Dignidad } from '@/domain/entities/Candidato';
 import { supabase } from './client';
@@ -17,6 +18,12 @@ interface AvanceRow {
 interface ResultadoRow {
   recinto_id: string; dignidad: Dignidad; candidato_id: string; candidato_nombre: string;
   lista_numero: string; organizacion_siglas: string; total_votos: number;
+}
+interface VotosBlancosNulosRow {
+  dignidad: Dignidad;
+  votos_blancos: number;
+  votos_nulos: number;
+  mesas_jrv: { recinto_id: string };
 }
 interface ActaRow {
   id: string; dignidad: Dignidad; latitud: number; longitud: number;
@@ -37,10 +44,10 @@ function mapearActa(row: ActaRow): ActaAuditada {
 
 export class SupabaseMonitoreoProvincial implements IMonitoreoProvincial {
   async consultar(): Promise<DatosMonitoreo> {
-    const [avances, resultados, actas] = await Promise.all([
-      this.leerAvances(), this.leerResultados(), this.leerActas(),
+    const [avances, resultados, votosBlancosNulos, actas] = await Promise.all([
+      this.leerAvances(), this.leerResultados(), this.leerVotosBlancosNulos(), this.leerActas(),
     ]);
-    return { avances, resultados, actas };
+    return { avances, resultados, votosBlancosNulos, actas };
   }
 
   private async leerAvances(): Promise<AvanceRecinto[]> {
@@ -73,6 +80,26 @@ export class SupabaseMonitoreoProvincial implements IMonitoreoProvincial {
       recintoId: r.recinto_id, dignidad: r.dignidad, candidatoId: r.candidato_id,
       candidato: r.candidato_nombre, lista: r.lista_numero, organizacion: r.organizacion_siglas,
       votos: r.total_votos,
+    }));
+  }
+
+  private async leerVotosBlancosNulos(): Promise<VotosBlancosNulosRecinto[]> {
+    const rows: VotosBlancosNulosRow[] = [];
+    // La vista de resultados incluye actas sin filtrar estado_sync.
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await supabase.from('actas')
+        .select('dignidad, votos_blancos, votos_nulos, mesas_jrv!inner(recinto_id)')
+        .order('id').range(offset, offset + 499)
+        .overrideTypes<VotosBlancosNulosRow[], { merge: false }>();
+      if (error) throw error;
+      rows.push(...data);
+      if (data.length < 500) break;
+    }
+    return rows.map((row) => ({
+      recintoId: row.mesas_jrv.recinto_id,
+      dignidad: row.dignidad,
+      blancos: row.votos_blancos,
+      nulos: row.votos_nulos,
     }));
   }
 
