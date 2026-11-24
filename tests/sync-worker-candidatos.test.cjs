@@ -66,3 +66,42 @@ test('missing historical candidates return the acta to pending OCR', async () =>
   await assert.rejects(worker.procesarActa('acta', false), /Candidato no encontrado/);
   assert.equal(acta.estado, 'PENDING_OCR');
 });
+
+test('manual and automatic attempts share the same OCR operation', async () => {
+  const { SyncWorker } = moduleUnderTest.exports;
+  const acta = { id: 'acta', creadoPor: 'veedor', estado: 'PENDING_OCR', votosCandidatos: [] };
+  let releaseOcr;
+  let ocrCalls = 0;
+  const actas = {
+    obtenerPorId: async () => acta,
+    marcarProcesandoOcr: async () => { acta.estado = 'PROCESSING_OCR'; },
+    actualizarExtraccionOcr: async () => { acta.estado = 'NEEDS_CONFIRMATION'; },
+  };
+  const worker = new SyncWorker(
+    actas,
+    { extraerVotos: () => { ocrCalls += 1; return new Promise((resolve) => { releaseOcr = resolve; }); } },
+    { obtenerCandidatosPorIds: async () => [] },
+    { estaConectado: async () => true },
+    {},
+  );
+  const automatic = worker.procesarActa('acta');
+  const manual = worker.procesarActa('acta');
+  await new Promise(setImmediate);
+  assert.equal(ocrCalls, 1);
+  releaseOcr({});
+  const results = await Promise.all([automatic, manual]);
+  assert.deepEqual(results.map((result) => result.estado), ['NEEDS_CONFIRMATION', 'NEEDS_CONFIRMATION']);
+});
+
+test('offline retry does not start OCR or change the pending acta', async () => {
+  const { SyncWorker } = moduleUnderTest.exports;
+  const acta = { id: 'acta', estado: 'PENDING_OCR' };
+  const worker = new SyncWorker(
+    { obtenerPorId: async () => acta },
+    { extraerVotos: async () => assert.fail('OCR must not run offline') },
+    {},
+    { estaConectado: async () => false },
+    {},
+  );
+  assert.equal((await worker.procesarActa('acta')).estado, 'PENDING_OCR');
+});

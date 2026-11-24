@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,7 +9,11 @@ import {
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import type { Acta, EstadoActa } from '@/domain/entities/Acta';
+import type { IActaProcessingService } from '@/domain/ports/IActaProcessingService';
+import type { ICrashReportingService } from '@/domain/ports/ICrashReportingService';
+import { FeedbackBottomSheet, type FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
+import { avisarActaLista } from '@/presentation/store/slices/actaSlice';
 import { cargarHistorialActas } from '@/presentation/store/slices/historialSlice';
 
 type PestanaHistorial = 'pendientes' | 'enviadas';
@@ -33,13 +37,34 @@ function obtenerEtiqueta(acta: Acta): string {
   return `${acta.dignidad} · Mesa ${acta.mesaJrvId}`;
 }
 
-export function HistorialActasScreen() {
+export function HistorialActasScreen({
+  processingService,
+  crashReportingService,
+}: {
+  processingService: IActaProcessingService;
+  crashReportingService: ICrashReportingService;
+}) {
   const dispatch = useAppDispatch();
   const perfil = useAppSelector((state) => state.auth.perfil);
   const { actas, cargando, cargado, error } = useAppSelector(
     (state) => state.historial,
   );
   const [pestana, setPestana] = useState<PestanaHistorial>('pendientes');
+  const [reintentandoId, setReintentandoId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackContent | null>(null);
+  const reintentoActivo = useRef(false);
+  const sesionActual = useRef(perfil?.id);
+  const montada = useRef(true);
+
+  useEffect(() => {
+    montada.current = true;
+    return () => { montada.current = false; };
+  }, []);
+
+  useEffect(() => {
+    sesionActual.current = perfil?.id;
+    return () => { sesionActual.current = undefined; };
+  }, [perfil?.id]);
 
   const cargar = useCallback(() => {
     if (perfil?.id) void dispatch(cargarHistorialActas(perfil.id));
@@ -62,6 +87,50 @@ export function HistorialActasScreen() {
       pathname: '/(actas)/verificacion',
       params: { actaId: acta.id },
     });
+  };
+
+  const reintentarOcr = async (acta: Acta) => {
+    if (!perfil || acta.creadoPor !== perfil.id || acta.estado !== 'PENDING_OCR' || reintentoActivo.current) {
+      return;
+    }
+
+    reintentoActivo.current = true;
+    setReintentandoId(acta.id);
+    try {
+      const resultado = await processingService.procesarActa(acta.id);
+      if (sesionActual.current !== perfil.id) return;
+      if (resultado.estado === 'NEEDS_CONFIRMATION') {
+        dispatch(avisarActaLista(resultado.id));
+      } else {
+        setFeedback({
+          title: resultado.estado === 'PENDING_OCR' ? 'OCR pendiente' : 'Estado actualizado',
+          message: resultado.estado === 'PENDING_OCR'
+            ? 'No hay conexión a internet. El acta permanece guardada y se reintentará al recuperar la conexión.'
+            : 'El estado del acta ha cambiado. Consulte el historial actualizado.',
+          tone: 'error',
+        });
+      }
+    } catch (error) {
+      const fallo = error instanceof Error ? error : new Error('No se pudo procesar el acta.');
+      await crashReportingService.registrarError(fallo, {
+        operacion: 'reintentar_ocr_acta',
+        pantalla: 'historial_actas',
+        actaId: acta.id,
+      });
+      if (sesionActual.current === perfil.id) {
+        setFeedback({
+          title: 'No se pudo procesar el acta',
+          message: `${fallo.message} Consulte el estado en el historial y vuelva a intentarlo si sigue pendiente.`,
+          tone: 'error',
+        });
+      }
+    } finally {
+      if (sesionActual.current === perfil.id) {
+        await dispatch(cargarHistorialActas(perfil.id));
+      }
+      reintentoActivo.current = false;
+      if (montada.current) setReintentandoId(null);
+    }
   };
 
   return (
@@ -148,11 +217,19 @@ export function HistorialActasScreen() {
                 key={acta.id}
                 acta={acta}
                 onPress={() => abrirActa(acta)}
+                onReintentar={
+                  perfil?.id === acta.creadoPor && acta.estado === 'PENDING_OCR'
+                    ? () => void reintentarOcr(acta)
+                    : undefined
+                }
+                reintentando={reintentandoId === acta.id}
+                reintentoDeshabilitado={reintentandoId !== null}
               />
             ))}
           </View>
         )}
       </ScrollView>
+      <FeedbackBottomSheet content={feedback} onDismiss={() => setFeedback(null)} />
     </View>
   );
 }
@@ -200,9 +277,12 @@ function BotonPestana({
 interface TarjetaActaProps {
   acta: Acta;
   onPress: () => void;
+  onReintentar?: () => void;
+  reintentando: boolean;
+  reintentoDeshabilitado: boolean;
 }
 
-function TarjetaActa({ acta, onPress }: TarjetaActaProps) {
+function TarjetaActa({ acta, onPress, onReintentar, reintentando, reintentoDeshabilitado }: TarjetaActaProps) {
   const sePuedeAbrir =
     acta.estado === 'NEEDS_CONFIRMATION' ||
     acta.estado === 'PENDING_SYNC' ||
@@ -250,6 +330,22 @@ function TarjetaActa({ acta, onPress }: TarjetaActaProps) {
         <Text className="text-sm font-bold text-primario" selectable>
           {acta.estado === 'SYNCED' ? 'Consultar o corregir' : 'Abrir acta'}
         </Text>
+      ) : null}
+      {onReintentar ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Reintentar OCR, ${obtenerEtiqueta(acta)}`}
+          accessibilityState={{ disabled: reintentoDeshabilitado, busy: reintentando }}
+          disabled={reintentoDeshabilitado}
+          onPress={onReintentar}
+          className={`min-h-11 items-center justify-center rounded-xl px-4 ${
+            reintentoDeshabilitado ? 'bg-slate-400' : 'bg-primario'
+          }`}
+        >
+          <Text className="font-bold text-white" selectable>
+            {reintentando ? 'Procesando OCR…' : 'Reintentar OCR'}
+          </Text>
+        </Pressable>
       ) : null}
     </View>
   );
