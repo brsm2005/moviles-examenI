@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -149,6 +151,23 @@ export function ConfirmarActaScreen({
     });
   };
 
+  const cuadreEnTiempoReal = useMemo(() => {
+    if (!formulario) return { suma: 0, totalSufragantes: 0, cuadra: false };
+    
+    const totalSufragantes = enteroOInvalido(formulario.totalSufragantes) ?? 0;
+    const votosBlancos = enteroOInvalido(formulario.votosBlancos) ?? 0;
+    const votosNulos = enteroOInvalido(formulario.votosNulos) ?? 0;
+    const votosCandidatos = formulario.votosCandidatos.reduce(
+      (sum, votos) => sum + (enteroOInvalido(votos) ?? 0),
+      0,
+    );
+
+    const suma = votosCandidatos + votosBlancos + votosNulos;
+    const cuadra = suma === totalSufragantes;
+
+    return { suma, totalSufragantes, cuadra };
+  }, [formulario]);
+
   const confirmar = async () => {
     if (!acta || !formulario || !usuarioId) return;
     const resultados = {
@@ -212,12 +231,16 @@ export function ConfirmarActaScreen({
   }
 
   return (
-    <View className="flex-1 bg-fondo">
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="gap-5 px-5 pb-8 pt-6"
-        keyboardShouldPersistTaps="handled"
-      >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1"
+    >
+      <View className="flex-1 bg-fondo">
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="gap-5 px-5 pb-8 pt-6"
+          keyboardShouldPersistTaps="handled"
+        >
         <View className="gap-1">
           <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
             REVISIÓN HUMANA
@@ -278,6 +301,46 @@ export function ConfirmarActaScreen({
                 />
               ))}
             </View>
+
+            <View className={`mt-4 rounded-xl border p-4 ${
+              cuadreEnTiempoReal.totalSufragantes === 0
+                ? 'border-slate-300 bg-slate-50'
+                : cuadreEnTiempoReal.cuadra
+                  ? 'border-green-300 bg-green-50'
+                  : 'border-red-300 bg-red-50'
+            }`}>
+              <View className="flex-row items-center justify-between gap-3">
+                <View className="flex-1">
+                  <Text className={`font-bold ${
+                    cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'text-slate-900'
+                      : cuadreEnTiempoReal.cuadra
+                        ? 'text-green-900'
+                        : 'text-red-900'
+                  }`} selectable>
+                    {cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'Verificación de cuadre'
+                      : cuadreEnTiempoReal.cuadra
+                        ? '✓ Cuadre correcto'
+                        : '✗ Cuadre incorrecto'}
+                  </Text>
+                  <Text className={`mt-1 text-sm leading-5 ${
+                    cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'text-slate-700'
+                      : cuadreEnTiempoReal.cuadra
+                        ? 'text-green-800'
+                        : 'text-red-800'
+                  }`} selectable>
+                    {cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'Complete los campos para verificar que la suma de votos coincida.'
+                      : cuadreEnTiempoReal.cuadra
+                        ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide con el total de sufragantes.`
+                        : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
+                  </Text>
+                </View>
+              </View>
+            </View>
+
             {acta.alertaUbicacion ? (
               <Text className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" selectable>
                 ! La ubicación de esta acta requiere revisión.
@@ -319,7 +382,8 @@ export function ConfirmarActaScreen({
           if (confirmada) router.back();
         }}
       />
-    </View>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -4,9 +4,7 @@
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
   },
-  "deno.enablePaths": [
-    "supabase/functions"
-  ],
+  "deno.enablePaths": ["supabase/functions"],
   "deno.lint": true,
   "deno.unstable": [
     "bare-node-builtins",
@@ -28,5 +26,6 @@
   },
   "json.schemaDownload.trustedDomains": {
     "https://supabase.com/schemas/": true
-  }
+  },
+  "java.configuration.updateBuildConfiguration": "interactive"
 }

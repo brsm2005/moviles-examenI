@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -92,6 +94,11 @@ export function VerificacionActaScreen({
     suma: number;
     total: number;
   } | null>(null);
+  const [cuadreEnTiempoReal, setCuadreEnTiempoReal] = useState({
+    suma: 0,
+    totalSufragantes: 0,
+    cuadra: false,
+  });
   const cameraRef = useRef<CameraView>(null);
   const cuadreSheetRef = useRef<BottomSheetModal>(null);
   const procesamientoActivo = useRef(false);
@@ -102,6 +109,7 @@ export function VerificacionActaScreen({
     handleSubmit,
     getValues,
     reset,
+    watch,
     formState: { isSubmitting },
   } = useForm<ActaVerificacionInput, undefined, ActaVerificacion>({
     resolver: zodResolver(actaVerificacionSchema),
@@ -111,8 +119,27 @@ export function VerificacionActaScreen({
       votosNulos: '',
       votosCandidatos: [],
     },
+    mode: 'onChange',
   });
   const { fields } = useFieldArray({ control, name: 'votosCandidatos' });
+
+  // Validación en tiempo real
+  const watchedValues = watch();
+  
+  useEffect(() => {
+    const totalSufragantes = numeroDeCampo(watchedValues.totalSufragantes ?? '') ?? 0;
+    const votosBlancos = numeroDeCampo(watchedValues.votosBlancos ?? '') ?? 0;
+    const votosNulos = numeroDeCampo(watchedValues.votosNulos ?? '') ?? 0;
+    const votosCandidatos = (watchedValues.votosCandidatos ?? []).reduce(
+      (sum, voto) => sum + (numeroDeCampo(voto.votos ?? '') ?? 0),
+      0,
+    );
+
+    const suma = votosCandidatos + votosBlancos + votosNulos;
+    const cuadra = suma === totalSufragantes;
+
+    setCuadreEnTiempoReal({ suma, totalSufragantes, cuadra });
+  }, [watchedValues]);
 
   useEffect(() => {
     let activa = true;
@@ -450,13 +477,17 @@ export function VerificacionActaScreen({
   const puedeEnviar = puedeEditar || acta?.estado === 'PENDING_SYNC';
 
   return (
-    <View className="flex-1 bg-fondo">
-      <ScrollView
-        className="flex-1"
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerClassName="gap-5 px-5 pb-10 pt-5"
-        keyboardShouldPersistTaps="handled"
-      >
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      className="flex-1"
+    >
+      <View className="flex-1 bg-fondo">
+        <ScrollView
+          className="flex-1"
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerClassName="gap-5 px-5 pb-10 pt-5"
+          keyboardShouldPersistTaps="handled"
+        >
         <View className="gap-1">
           <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
             {acta?.estado === 'SYNCED' ? 'CORRECCIÓN CON AUDITORÍA' : 'REVISIÓN HUMANA'}
@@ -629,6 +660,45 @@ export function VerificacionActaScreen({
                   />
                 ))}
               </View>
+
+              <View className={`mt-4 rounded-xl border p-4 ${
+                cuadreEnTiempoReal.totalSufragantes === 0
+                  ? 'border-slate-300 bg-slate-50'
+                  : cuadreEnTiempoReal.cuadra
+                    ? 'border-green-300 bg-green-50'
+                    : 'border-red-300 bg-red-50'
+              }`}>
+                <View className="flex-row items-center justify-between gap-3">
+                  <View className="flex-1">
+                    <Text className={`font-bold ${
+                      cuadreEnTiempoReal.totalSufragantes === 0
+                        ? 'text-slate-900'
+                        : cuadreEnTiempoReal.cuadra
+                          ? 'text-green-900'
+                          : 'text-red-900'
+                    }`} selectable>
+                      {cuadreEnTiempoReal.totalSufragantes === 0
+                        ? 'Verificación de cuadre'
+                        : cuadreEnTiempoReal.cuadra
+                          ? '✓ Cuadre correcto'
+                          : '✗ Cuadre incorrecto'}
+                    </Text>
+                    <Text className={`mt-1 text-sm leading-5 ${
+                      cuadreEnTiempoReal.totalSufragantes === 0
+                        ? 'text-slate-700'
+                        : cuadreEnTiempoReal.cuadra
+                          ? 'text-green-800'
+                          : 'text-red-800'
+                    }`} selectable>
+                      {cuadreEnTiempoReal.totalSufragantes === 0
+                        ? 'Complete los campos para verificar que la suma de votos coincida.'
+                        : cuadreEnTiempoReal.cuadra
+                          ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide con el total de sufragantes.`
+                          : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
 
             {acta.estado === 'PENDING_SYNC' ? (
@@ -666,11 +736,10 @@ export function VerificacionActaScreen({
           accessibilityRole="button"
           className="min-h-11 items-center justify-center"
           onPress={() => volverSeguro('/(actas)/historial')}
-        >
+        />
           <Text className="font-semibold text-slate-600" selectable>
             Volver al historial
           </Text>
-        </Pressable>
       </ScrollView>
 
       <BottomSheetModal
@@ -725,6 +794,7 @@ export function VerificacionActaScreen({
         }}
       />
     </View>
+    </KeyboardAvoidingView>
   );
 }
 
