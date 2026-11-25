@@ -182,7 +182,9 @@ export class SyncWorker implements IActaProcessingService {
     await this.actas.marcarProcesandoOcr(actaId);
 
     try {
-      const votos = await extraerOcrActa(acta, acta.fotoUri, this.territorio, this.ocr);
+      const candidatoIds = acta.votosCandidatos.map((v) => v.candidatoId);
+      const candidatos = await this.territorio.obtenerCandidatosPorIds(candidatoIds);
+      const votos = await extraerOcrActa(acta, acta.fotoUri, this.ocr, candidatos);
       await this.actas.actualizarExtraccionOcr(actaId, votos);
     } catch (error) {
       await this.actas.devolverOcrPendiente(actaId);

@@ -10,8 +10,6 @@ import type {
 } from '@/domain/ports/IActaOcrService';
 
 const respuestaOcrSchema = z.object({
-  provinciaLeida: z.string().nullable(),
-  cantonLeido: z.string().nullable(),
   totalSufragantes: z.number().int().min(0).nullable(),
   votosBlancos: z.number().int().min(0).nullable(),
   votosNulos: z.number().int().min(0).nullable(),
@@ -29,20 +27,12 @@ function obtenerModelo() {
   }
 
   return new GoogleGenerativeAI(apiKey).getGenerativeModel({
-    model: 'gemini-3.8-flash',
+    model: 'gemini-3.5-flash-lite',
     generationConfig: {
       responseMimeType: 'application/json',
       responseSchema: {
         type: SchemaType.OBJECT,
         properties: {
-          provinciaLeida: {
-            type: SchemaType.STRING,
-            nullable: true,
-          },
-          cantonLeido: {
-            type: SchemaType.STRING,
-            nullable: true,
-          },
           totalSufragantes: {
             type: SchemaType.INTEGER,
             nullable: true,
@@ -72,8 +62,6 @@ function obtenerModelo() {
           },
         },
         required: [
-          'provinciaLeida',
-          'cantonLeido',
           'totalSufragantes',
           'votosBlancos',
           'votosNulos',
@@ -87,7 +75,6 @@ function obtenerModelo() {
 function construirInstrucciones(
   dignidad: Dignidad,
   candidatos: Candidato[],
-  territorio: { provincia: string; canton: string },
 ): string {
   const listaCandidatos = candidatos
     .map((candidato, indice) => `${indice + 1}. ${candidato.nombresCompletos}`)
@@ -95,9 +82,6 @@ function construirInstrucciones(
 
   return [
     `Extrae los votos del acta electoral de dignidad ${dignidad}.`,
-    `La jurisdicción esperada de la mesa es ${JSON.stringify(territorio)}.`,
-    'Lee literalmente de la imagen la provincia y el cantón en provinciaLeida y cantonLeido.',
-    'Si falta alguno, no es legible o hay duda, devuelve null para ese campo. Nunca copies la jurisdicción esperada ni la infieras.',
     'Responde solo con el JSON indicado por el esquema.',
     'Si un dígito no es legible, responde null; nunca lo adivines.',
     'Conserva el orden de los candidatos y devuelve exactamente cinco elementos.',
@@ -112,7 +96,6 @@ export class GeminiActaOcrService implements IActaOcrService {
     fotoUri: string,
     dignidad: Dignidad,
     candidatos: Candidato[],
-    territorio: { provincia: string; canton: string },
   ): Promise<ResultadoOcrActa> {
     if (candidatos.length !== 5) {
       throw new Error('El OCR requiere exactamente cinco candidatos.');
@@ -131,7 +114,7 @@ export class GeminiActaOcrService implements IActaOcrService {
       imagenBase64 = await new File(fotoUri).base64();
     }
     const resultado = await obtenerModelo().generateContent([
-      construirInstrucciones(dignidad, candidatos, territorio),
+      construirInstrucciones(dignidad, candidatos),
       { inlineData: { data: imagenBase64, mimeType: 'image/jpeg' } },
     ]);
     const texto = resultado.response.text();
@@ -139,8 +122,6 @@ export class GeminiActaOcrService implements IActaOcrService {
 
     const lectura = respuestaOcrSchema.parse(JSON.parse(texto));
     return {
-      provinciaLeida: lectura.provinciaLeida,
-      cantonLeido: lectura.cantonLeido,
       totalSufragantes: lectura.totalSufragantes,
       votosBlancos: lectura.votosBlancos,
       votosNulos: lectura.votosNulos,

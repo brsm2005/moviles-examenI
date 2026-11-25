@@ -13,7 +13,6 @@ import type { IActaRemoteDataSource } from '@/domain/ports/IActaRemoteDataSource
 import type { IConnectivityService } from '@/domain/ports/IConnectivityService';
 import type { IActaOcrService } from '@/domain/ports/IActaOcrService';
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
-import { exigirTerritorioVerificado, extraerOcrActa } from '@/domain/usecases/extraerOcrActa';
 import type {
   CrearActaInput,
   IActaRepository,
@@ -51,6 +50,31 @@ export class ActaRepository implements IActaRepository {
     if (acta.estado && acta.estado !== 'PENDING_OCR') {
       throw new Error('Una captura nueva debe comenzar en estado PENDING_OCR.');
     }
+
+    // Validación local
+    const actaLocalExistente = await this.local.obtenerParaMesa(
+      acta.mesaJrvId,
+      acta.dignidad,
+    );
+    if (actaLocalExistente) {
+      throw new Error(
+        `Un acta de esta mesa para la dignidad ${acta.dignidad} ya existe en el dispositivo.`,
+      );
+    }
+
+    // Validación remota (si hay conexión)
+    if (await this.connectivity.estaConectado()) {
+      const actaRemotaExistente = await this.remote.obtenerParaMesa(
+        acta.mesaJrvId,
+        acta.dignidad,
+      );
+      if (actaRemotaExistente) {
+        throw new Error(
+          `Un acta de esta mesa para la dignidad ${acta.dignidad} ya fue enviada a la nube.`,
+        );
+      }
+    }
+
     await this.local.guardar({ ...acta, estado: 'PENDING_OCR', verificacionTerritorial: null });
   }
 
@@ -119,7 +143,6 @@ export class ActaRepository implements IActaRepository {
   ): Promise<void> {
     validarVotos(resultados, true);
     const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
-    exigirTerritorioVerificado(acta.verificacionTerritorial);
     const siguiente = transicionarEstadoActa(acta, 'PENDING_SYNC');
     await this.local.actualizar({
       ...siguiente,
@@ -134,7 +157,6 @@ export class ActaRepository implements IActaRepository {
     if (acta.estado !== 'PENDING_SYNC') {
       throw new Error('Solo se pueden sincronizar actas confirmadas pendientes.');
     }
-    exigirTerritorioVerificado(acta.verificacionTerritorial);
     if (!(await this.connectivity.estaConectado())) return;
 
     const fotoStoragePath = await this.remote.guardarActa(acta);
@@ -163,8 +185,6 @@ export class ActaRepository implements IActaRepository {
     }
 
     const fotoVerificada = fotoUri.startsWith('http') ? acta.fotoUri : fotoUri;
-    const lectura = await extraerOcrActa(acta, fotoVerificada, this.territorio, this.ocr);
-    exigirTerritorioVerificado(lectura.verificacionTerritorial);
 
     const corregida: Acta = {
       ...acta,
@@ -197,15 +217,20 @@ export class ActaRepository implements IActaRepository {
 
   async marcarSincronizada(actaId: string): Promise<void> {
     const acta = exigirActa(await this.local.obtenerPorId(actaId), actaId);
-    exigirTerritorioVerificado(acta.verificacionTerritorial);
     await this.local.actualizar(transicionarEstadoActa(acta, 'SYNCED'));
   }
 
-  obtenerParaMesa(
+  async obtenerParaMesa(
     mesaJrvId: string,
     dignidad: Dignidad,
   ): Promise<Acta | null> {
-    return this.local.obtenerParaMesa(mesaJrvId, dignidad);
+    const local = await this.local.obtenerParaMesa(mesaJrvId, dignidad);
+    if (local) return local;
+
+    // Si hay conexión, también verifica si existe en remoto
+    if (!(await this.connectivity.estaConectado())) return null;
+
+    return this.remote.obtenerParaMesa(mesaJrvId, dignidad);
   }
 
   private async obtenerActa(actaId: string): Promise<Acta | null> {

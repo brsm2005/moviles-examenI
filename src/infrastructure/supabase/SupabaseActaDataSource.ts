@@ -107,6 +107,18 @@ export class SupabaseActaDataSource implements IActaRemoteDataSource {
     return data ? mapearActa(data) : null;
   }
 
+  async obtenerParaMesa(mesaJrvId: string, dignidad: Dignidad): Promise<Acta | null> {
+    const { data, error } = await supabase
+      .from('actas')
+      .select(ACTA_SELECT)
+      .eq('mesa_id', mesaJrvId)
+      .eq('dignidad', dignidad)
+      .eq('estado_sync', 'SYNCED')
+      .maybeSingle();
+    if (error) throw error;
+    return data ? mapearActa(data) : null;
+  }
+
   async guardarActa(
     acta: Acta,
     auditoria?: DatosAuditoriaCorreccion,

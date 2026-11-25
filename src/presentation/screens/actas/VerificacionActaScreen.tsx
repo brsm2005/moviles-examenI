@@ -346,7 +346,7 @@ export function VerificacionActaScreen({
       if (resultado.estado === 'PENDING_OCR') {
         setFeedback({
           title: 'OCR pendiente',
-          message: 'La fotografía está guardada. Se necesita conexión para verificar la provincia y el cantón.',
+          message: 'La fotografía está guardada. Se necesita conexión para procesar el OCR.',
           tone: 'error',
         });
       } else if (resultado.estado === 'NEEDS_CONFIRMATION') {
@@ -363,10 +363,10 @@ export function VerificacionActaScreen({
     } catch (error) {
       await crashReportingService.registrarError(
         error instanceof Error ? error : new Error(mostrarError(error)),
-        { operacion: 'verificar_territorio_acta', pantalla: 'verificacion_acta', actaId: acta.id },
+        { operacion: 'procesar_ocr_acta', pantalla: 'verificacion_acta', actaId: acta.id },
       );
       setFeedback({
-        title: 'No se pudo verificar el acta',
+        title: 'No se pudo procesar el acta',
         message: mostrarError(error),
         tone: 'error',
       });
@@ -448,8 +448,6 @@ export function VerificacionActaScreen({
   const puedeEditar =
     acta?.estado === 'NEEDS_CONFIRMATION' || acta?.estado === 'SYNCED';
   const puedeEnviar = puedeEditar || acta?.estado === 'PENDING_SYNC';
-  const territorioBloqueado = acta && acta.estado !== 'SYNCED' &&
-    acta.verificacionTerritorial !== 'COINCIDE';
 
   return (
     <View className="flex-1 bg-fondo">
@@ -555,7 +553,7 @@ export function VerificacionActaScreen({
                       </Text>
                     </View>
                   )}
-                  {puedeEditar || (acta.estado === 'PENDING_SYNC' && territorioBloqueado) ? (
+                  {puedeEditar ? (
                     <Pressable
                       accessibilityRole="button"
                       disabled={guardando}
@@ -580,32 +578,6 @@ export function VerificacionActaScreen({
                   Complete esos valores manualmente antes de confirmar.
                 </Text>
               </View>
-            ) : null}
-
-            {territorioBloqueado ? (
-              <View className="gap-2 rounded-xl border border-red-200 bg-red-50 p-4">
-                <Text className="font-bold text-red-900" selectable>
-                  {acta.verificacionTerritorial === 'NO_COINCIDE'
-                    ? 'El acta es de otra provincia o cantón'
-                    : 'Provincia y cantón sin verificar'}
-                </Text>
-                <Text className="text-sm leading-5 text-red-800" selectable>
-                  {acta.verificacionTerritorial === 'NO_COINCIDE'
-                    ? 'El envío está bloqueado. Tome una fotografía del acta de la jurisdicción correcta.'
-                    : 'El envío está bloqueado. Verifique la fotografía y vuelva a procesarla con conexión.'}
-                </Text>
-                <Pressable accessibilityRole="button" disabled={guardando || camaraActiva}
-                  onPress={() => void procesarFotografia(acta.fotoUri, true)}
-                  className="min-h-11 justify-center">
-                  <Text className="font-bold text-red-900" selectable>
-                    {guardando ? 'Verificando…' : 'Verificar provincia y cantón'}
-                  </Text>
-                </Pressable>
-              </View>
-            ) : acta.estado === 'SYNCED' ? (
-              <Text className="text-sm leading-5 text-slate-600" selectable>
-                Al guardar, se verificará la provincia y el cantón de la fotografía antes de enviar la corrección.
-              </Text>
             ) : null}
 
             {acta.alertaUbicacion ? (
@@ -659,7 +631,7 @@ export function VerificacionActaScreen({
               </View>
             </View>
 
-            {acta.estado === 'PENDING_SYNC' && !territorioBloqueado ? (
+            {acta.estado === 'PENDING_SYNC' ? (
               <Text className="rounded-xl bg-blue-50 p-4 text-sm leading-5 text-blue-900" selectable>
                 La verificación ya está guardada. Reintente el envío o espere a que vuelva la conexión.
               </Text>
@@ -668,9 +640,9 @@ export function VerificacionActaScreen({
             {puedeEnviar ? (
               <Pressable
                 accessibilityRole="button"
-                disabled={guardando || isSubmitting || camaraActiva || Boolean(territorioBloqueado)}
+                disabled={guardando || isSubmitting || camaraActiva}
                 className={`min-h-12 items-center justify-center rounded-xl px-4 ${
-                  guardando || isSubmitting || camaraActiva || territorioBloqueado ? 'bg-slate-400' : 'bg-primario'
+                  guardando || isSubmitting || camaraActiva ? 'bg-slate-400' : 'bg-primario'
                 }`}
                 onPress={() => void handleSubmit(guardarResultados, revisarErrores)()}
               >
