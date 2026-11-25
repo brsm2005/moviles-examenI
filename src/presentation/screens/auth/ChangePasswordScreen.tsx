@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Text, View } from 'react-native';
 import type { z } from 'zod';
+import { colors, fontFamilies, radius } from '@theme/tokens';
 import { cambioContrasenaSchema } from '@/domain/schemas/authSchemas';
 import { AuthShell } from '@/presentation/components/auth/AuthShell';
 import { AuthTextField } from '@/presentation/components/auth/AuthTextField';
@@ -11,6 +12,7 @@ import {
   FeedbackBottomSheet,
   type FeedbackContent,
 } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { changeInitialPassword } from '@/presentation/store/slices/authSlice';
 
@@ -100,21 +102,34 @@ export function ChangePasswordScreen() {
           />
         )}
       />
-      <Text className="text-sm leading-5 text-slate-500" selectable>
-        Use al menos 10 caracteres. Se recomienda combinar letras, números y símbolos.
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        disabled={isSubmitting || cargando}
+      <View
+        style={{
+          backgroundColor: colors.cremaLimon,
+          borderRadius: radius.md,
+          paddingHorizontal: 14,
+          paddingVertical: 10,
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: fontFamilies.bodyMedium,
+            fontSize: 13,
+            lineHeight: 19,
+            color: colors.grisCarbon,
+          }}
+          selectable
+        >
+          Use al menos 10 caracteres. Se recomienda combinar letras, números y símbolos.
+        </Text>
+      </View>
+      <AnimatedButton
+        title={isSubmitting || cargando ? 'Actualizando…' : 'Guardar contraseña'}
+        variant="primaryAccent"
+        loading={isSubmitting || cargando}
         onPress={() => {
           void handleSubmit(onSubmit)();
         }}
-      >
-        <Text className="font-bold text-white" selectable>
-          {isSubmitting || cargando ? 'Actualizando…' : 'Guardar contraseña'}
-        </Text>
-      </Pressable>
+      />
       <FeedbackBottomSheet
         content={feedback}
         onDismiss={() => {

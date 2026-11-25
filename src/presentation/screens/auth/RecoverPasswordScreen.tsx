@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 import type { z } from 'zod';
+import { colors, fontFamilies } from '@theme/tokens';
 import { recuperacionContrasenaSchema } from '@/domain/schemas/authSchemas';
 import { AuthShell } from '@/presentation/components/auth/AuthShell';
 import { AuthTextField } from '@/presentation/components/auth/AuthTextField';
@@ -11,6 +12,7 @@ import {
   FeedbackBottomSheet,
   type FeedbackContent,
 } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { requestPasswordReset } from '@/presentation/store/slices/authSlice';
 
@@ -60,6 +62,7 @@ export function RecoverPasswordScreen() {
         render={({ field, fieldState }) => (
           <AuthTextField
             label="Correo electrónico"
+            placeholder="usuario@organizacion.ec"
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -71,21 +74,27 @@ export function RecoverPasswordScreen() {
           />
         )}
       />
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        disabled={isSubmitting || cargando}
+      <AnimatedButton
+        title={isSubmitting || cargando ? 'Enviando enlace…' : 'Enviar enlace seguro'}
+        variant="primaryAccent"
+        loading={isSubmitting || cargando}
         onPress={() => {
           void handleSubmit(onSubmit)();
         }}
-      >
-        <Text className="font-bold text-white" selectable>
-          {isSubmitting || cargando ? 'Enviando enlace…' : 'Enviar enlace seguro'}
-        </Text>
-      </Pressable>
+      />
       <Link href="/(auth)/login" asChild>
-        <Pressable accessibilityRole="link" className="min-h-11 items-center justify-center">
-          <Text className="font-semibold text-secundario" selectable>
+        <Pressable
+          accessibilityRole="link"
+          style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Text
+            style={{
+              fontFamily: fontFamilies.bodyBold,
+              fontSize: 14,
+              color: colors.moradoPrincipal,
+            }}
+            selectable
+          >
             Volver al inicio de sesión
           </Text>
         </Pressable>

@@ -293,31 +293,33 @@ export function CapturaActaScreen({
 
   if (!cameraPermission?.granted) {
     return (
-      <View className="flex-1 justify-center gap-5 bg-fondo px-6">
-        <Text className="text-2xl font-bold text-texto" selectable>
-          Permiso de cámara requerido
-        </Text>
-        <Text className="text-base leading-6 text-slate-600" selectable>
-          Las actas solo se capturan directamente con la cámara; no se permite seleccionar fotos de la galería.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-          onPress={() => void requestCameraPermission()}
-        >
-          <Text className="font-semibold text-white" selectable>
-            Habilitar cámara
+      <View className="flex-1 justify-center gap-5 bg-malva px-6">
+        <View className="gap-4 rounded-2xl border border-borde-lavanda bg-white p-6">
+          <Text className="font-display text-3xl uppercase text-primario" selectable>
+            Permiso de cámara requerido
           </Text>
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-11 items-center justify-center"
-          onPress={() => volverSeguro('/(veedor)/veedor')}
-        >
-          <Text className="font-semibold text-slate-600" selectable>
-            Volver
+          <Text className="font-body text-base leading-6 text-texto" selectable>
+            Las actas solo se capturan directamente con la cámara; no se permite seleccionar fotos de la galería.
           </Text>
-        </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-14 items-center justify-center rounded-xl bg-primario px-4"
+            onPress={() => void requestCameraPermission()}
+          >
+            <Text className="font-body-bold text-amarillo" selectable>
+              Habilitar cámara
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white px-4"
+            onPress={() => volverSeguro('/(veedor)/veedor')}
+          >
+            <Text className="font-body-bold text-primario" selectable>
+              Volver
+            </Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -337,111 +339,129 @@ export function CapturaActaScreen({
               : null;
 
   return (
-    <View className="flex-1 bg-fondo">
+    <View className="flex-1 bg-malva">
       <ScrollView
         className="flex-1"
-        contentContainerClassName="gap-5 px-5 pb-8 pt-6"
+        contentContainerClassName="gap-5 px-5 pb-10 pt-5"
       >
-        <View className="gap-1">
-          <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
-            CAPTURA DE ACTA
+        <View className="gap-1.5 rounded-2xl bg-primario p-5">
+          <Text className="font-display text-3xl uppercase tracking-wider text-white" selectable>
+            Captura de acta electoral
           </Text>
-          <Text className="text-2xl font-bold text-texto" selectable>
-            Fotografía y verificación
-          </Text>
-          <Text className="text-sm leading-5 text-slate-600" selectable>
+          <Text className="font-body text-sm leading-5 text-malva" selectable>
             Centre el acta dentro de la guía vertical. La foto y el GPS se guardan en este dispositivo.
           </Text>
         </View>
 
-        <View className="gap-2">
-          <Text className="font-semibold text-texto" selectable>
-            Mesa asignada
-          </Text>
-          {cargandoMesas ? (
-            <ActivityIndicator color="#1B365D" />
-          ) : errorMesas ? (
-            <Text className="text-sm text-red-700" selectable>
-              {errorMesas}
+        {/* Selección rápida con una mano: Mesa + Dignidad */}
+        <View className="gap-4 rounded-2xl border border-borde-lavanda bg-white p-4">
+          <View className="gap-2">
+            <Text className="font-display text-xl uppercase tracking-wide text-primario" selectable>
+              Mesa asignada
             </Text>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2">
-              {mesas.map((mesa) => (
-                <Pressable
-                  key={mesa.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Mesa ${mesa.numero}, ${
-                    mesa.genero === 'FEMENINO' ? 'femenina' : mesa.genero === 'MASCULINO' ? 'masculina' : 'mixta'
-                  }`}
-                  accessibilityState={{ selected: mesa.id === mesaId }}
-                  className={`min-h-11 justify-center rounded-xl border px-4 ${
-                    mesa.id === mesaId
-                      ? 'border-primario bg-primario'
-                      : 'border-slate-300 bg-white'
-                  }`}
-                  onPress={() => setMesaId(mesa.id)}
-                >
-                  <Text
-                    className={`font-semibold ${
-                      mesa.id === mesaId ? 'text-white' : 'text-texto'
-                    }`}
-                    selectable
-                  >
-                    {nombreMesa(mesa)}
-                  </Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        <View className="gap-2">
-          <Text className="font-semibold text-texto" selectable>
-            Dignidad
-          </Text>
-          <View className="flex-row gap-2">
-            {dignidades.map((opcion) => (
-              <Pressable
-                key={opcion}
-                accessibilityRole="button"
-                accessibilityState={{ selected: dignidad === opcion }}
-                className={`min-h-11 flex-1 items-center justify-center rounded-xl border ${
-                  dignidad === opcion
-                    ? 'border-primario bg-primario'
-                    : 'border-slate-300 bg-white'
-                }`}
-                onPress={() => setDignidad(opcion)}
-              >
-                <Text
-                  className={`font-semibold ${
-                    dignidad === opcion ? 'text-white' : 'text-texto'
-                  }`}
-                  selectable
-                >
-                  {opcion}
+            {cargandoMesas ? (
+              <ActivityIndicator color="#6F2C91" />
+            ) : errorMesas ? (
+              <View className="rounded-xl bg-crema p-3">
+                <Text className="font-body-semibold text-sm text-texto" selectable>
+                  {errorMesas}
                 </Text>
-              </Pressable>
-            ))}
+              </View>
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerClassName="gap-2.5"
+              >
+                {mesas.map((mesa) => {
+                  const activa = mesa.id === mesaId;
+                  return (
+                    <Pressable
+                      key={mesa.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Mesa ${mesa.numero}, ${
+                        mesa.genero === 'FEMENINO'
+                          ? 'femenina'
+                          : mesa.genero === 'MASCULINO'
+                            ? 'masculina'
+                            : 'mixta'
+                      }`}
+                      accessibilityState={{ selected: activa }}
+                      className={`min-h-12 min-w-20 items-center justify-center rounded-xl border-[1.5px] px-4 ${
+                        activa
+                          ? 'border-primario bg-primario'
+                          : 'border-borde-lavanda bg-vainilla'
+                      }`}
+                      onPress={() => setMesaId(mesa.id)}
+                    >
+                      <Text
+                        className={`font-display text-2xl tracking-wide ${
+                          activa ? 'text-amarillo' : 'text-primario'
+                        }`}
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        selectable
+                      >
+                        {nombreMesa(mesa)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            )}
           </View>
-          <Text className="text-xs text-slate-500" selectable>
-            {cargandoCandidatos
-              ? 'Cargando candidatos...'
-              : candidatos.length === 5
-              ? `Candidatos cargados: ${candidatos.map((candidato) => candidato.nombresCompletos).join(', ')}`
-              : `Se requieren cinco candidatos para ${dignidad}; hay ${candidatos.length} disponibles.`}
-          </Text>
-          {!cargandoMesas && (errorMesas || candidatos.length !== 5) ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => setIntentoCatalogo((intento) => intento + 1)}
-              className="min-h-11 justify-center"
-            >
-              <Text className="font-semibold text-primario">Actualizar mesas y candidatos</Text>
-            </Pressable>
-          ) : null}
+
+          <View className="gap-2">
+            <Text className="font-display text-xl uppercase tracking-wide text-primario" selectable>
+              Dignidad
+            </Text>
+            <View className="flex-row gap-2.5">
+              {dignidades.map((opcion) => {
+                const activa = dignidad === opcion;
+                return (
+                  <Pressable
+                    key={opcion}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: activa }}
+                    className={`min-h-12 flex-1 items-center justify-center rounded-xl border-[1.5px] ${
+                      activa
+                        ? 'border-primario bg-primario'
+                        : 'border-borde-lavanda bg-white'
+                    }`}
+                    onPress={() => setDignidad(opcion)}
+                  >
+                    <Text
+                      className={`font-body-bold text-sm uppercase tracking-wider ${
+                        activa ? 'text-amarillo' : 'text-texto'
+                      }`}
+                      selectable
+                    >
+                      {opcion}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text className="font-body text-xs leading-5 text-texto-secundario" selectable>
+              {cargandoCandidatos
+                ? 'Cargando candidatos...'
+                : candidatos.length === 5
+                  ? `Candidatos cargados: ${candidatos.map((candidato) => candidato.nombresCompletos).join(', ')}`
+                  : `Se requieren cinco candidatos para ${dignidad}; hay ${candidatos.length} disponibles.`}
+            </Text>
+            {!cargandoMesas && (errorMesas || candidatos.length !== 5) ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setIntentoCatalogo((intento) => intento + 1)}
+                className="min-h-12 items-center justify-center rounded-xl bg-lavanda px-4"
+              >
+                <Text className="font-body-bold text-primario">Actualizar mesas y candidatos</Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
-        <View className="overflow-hidden rounded-2xl bg-slate-900">
+        {/* Visor de cámara con marco de alto contraste */}
+        <View className="overflow-hidden rounded-2xl border-2 border-primario bg-texto">
           <View className="h-[360px]">
             <CameraView
               key={intentoCamara}
@@ -467,10 +487,10 @@ export function CapturaActaScreen({
             />
             <View
               pointerEvents="none"
-              className="absolute bottom-8 left-10 right-10 top-8 items-center justify-center"
+              className="absolute bottom-7 left-9 right-9 top-7 items-center justify-center"
             >
-              <View className="h-full w-[78%] rounded-lg border-2 border-white/80" />
-              <Text className="absolute bottom-3 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">
+              <View className="h-full w-[80%] rounded-xl border-2 border-amarillo" />
+              <Text className="absolute bottom-3 rounded-full bg-primario px-4 py-1.5 font-body-bold text-xs text-amarillo">
                 Mantenga el acta en vertical
               </Text>
             </View>
@@ -478,8 +498,8 @@ export function CapturaActaScreen({
         </View>
 
         {errorCamara ? (
-          <View className="gap-2">
-            <Text className="text-sm text-red-700" selectable>
+          <View className="gap-2 rounded-2xl border border-red-300 bg-red-50 p-4">
+            <Text className="font-body-semibold text-sm text-red-800" selectable>
               No se pudo iniciar la cámara: {errorCamara}
             </Text>
             <Pressable
@@ -489,21 +509,26 @@ export function CapturaActaScreen({
                 setCamaraLista(false);
                 setIntentoCamara((intento) => intento + 1);
               }}
-              className="min-h-11 justify-center"
+              className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
             >
-              <Text className="font-semibold text-primario">Reintentar cámara</Text>
+              <Text className="font-body-bold text-white">Reintentar cámara</Text>
             </Pressable>
           </View>
         ) : null}
 
+        {/* Controles ergonómicos de disparo (mínimo 56pt) */}
         <View className="flex-row gap-3">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={linternaActiva ? 'Apagar linterna' : 'Encender linterna'}
-            className="min-h-12 flex-1 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
+            className={`min-h-14 flex-1 items-center justify-center rounded-xl border-[1.5px] px-3 ${
+              linternaActiva
+                ? 'border-primario bg-crema'
+                : 'border-borde-lavanda bg-white'
+            }`}
             onPress={() => setLinternaActiva((activa) => !activa)}
           >
-            <Text className="font-semibold text-texto" selectable>
+            <Text className="text-center font-body-bold text-sm text-primario" selectable>
               {linternaActiva ? 'Apagar linterna' : 'Encender linterna'}
             </Text>
           </Pressable>
@@ -511,29 +536,42 @@ export function CapturaActaScreen({
             accessibilityRole="button"
             accessibilityLabel="Tomar fotografía del acta"
             disabled={motivoBloqueo !== null}
-            className={`min-h-12 flex-1 items-center justify-center rounded-xl px-4 ${
-              motivoBloqueo ? 'bg-slate-400' : 'bg-primario'
+            className={`min-h-14 flex-1 items-center justify-center rounded-xl border-[1.5px] px-4 ${
+              motivoBloqueo
+                ? 'border-borde bg-gris-claro'
+                : 'border-primario bg-amarillo'
             }`}
             onPress={() => void capturarActa()}
           >
             {cargando ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color="#6F2C91" />
             ) : (
-              <Text className="font-bold text-white" selectable>
+              <Text
+                className={`text-center font-display text-2xl uppercase tracking-wider ${
+                  motivoBloqueo ? 'text-texto-secundario' : 'text-primario'
+                }`}
+                selectable
+              >
                 Tomar fotografía
               </Text>
             )}
           </Pressable>
         </View>
+
         {motivoBloqueo ? (
-          <Text className="text-sm text-slate-600" selectable>{motivoBloqueo}</Text>
+          <View className="rounded-xl bg-crema px-4 py-3">
+            <Text className="font-body-semibold text-sm text-texto" selectable>
+              {motivoBloqueo}
+            </Text>
+          </View>
         ) : null}
+
         <Pressable
           accessibilityRole="button"
-          className="min-h-11 items-center justify-center"
+          className="min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white"
           onPress={() => volverSeguro('/(veedor)/veedor')}
         >
-          <Text className="font-semibold text-slate-600" selectable>
+          <Text className="font-body-bold text-primario" selectable>
             Volver
           </Text>
         </Pressable>

@@ -24,9 +24,21 @@ export function PieChartResultados({
 
   if (totalVotos === 0) {
     return (
-      <View className="gap-2 rounded-2xl border border-slate-200 bg-white p-6">
-        <Text className="text-lg font-bold text-texto">{titulo}</Text>
-        <Text className="text-sm text-slate-600">Sin votos registrados en esta selección.</Text>
+      <View
+        className="gap-3 rounded-2xl border border-borde-lavanda bg-white p-5"
+        style={{ borderCurve: 'continuous' }}
+      >
+        <View className="flex-row items-center justify-between gap-2">
+          <Text className="font-display text-2xl uppercase tracking-wide text-primario">
+            {titulo}
+          </Text>
+          <View className="rounded-full bg-crema px-3 py-1">
+            <Text className="font-body-bold text-xs text-texto">0 votos</Text>
+          </View>
+        </View>
+        <Text className="font-body text-sm text-texto-secundario">
+          Sin votos registrados en esta selección.
+        </Text>
       </View>
     );
   }
@@ -44,6 +56,18 @@ export function PieChartResultados({
     slices.push({ data: d, startAngle: currentAngle, endAngle });
     currentAngle = endAngle;
   });
+
+  const candidatosValidos = datos.filter(
+    (d) => d.id !== 'votos-blancos' && d.id !== 'votos-nulos',
+  );
+  const maxVotosCandidato = candidatosValidos.reduce(
+    (max, item) => (item.votos > max ? item.votos : max),
+    0,
+  );
+  const liderId =
+    maxVotosCandidato > 0
+      ? candidatosValidos.find((item) => item.votos === maxVotosCandidato)?.id ?? null
+      : null;
 
   const createArcPath = (
     startAngle: number,
@@ -73,66 +97,166 @@ export function PieChartResultados({
   };
 
   return (
-    <View className="gap-4 rounded-2xl border border-slate-200 bg-white p-6">
-      <Text className="text-lg font-bold text-texto">{titulo}</Text>
-
-      <View className="items-center">
-        <View className="w-full" style={{ maxWidth: 208, aspectRatio: 1 }}>
-          <Svg width="100%" height="100%" viewBox="0 0 240 240" accessible={false}>
-            {slices.map((slice) =>
-              slice.data.votos === totalVotos ? (
-                <Circle key={slice.data.id} cx={CENTER_X} cy={CENTER_Y} r={RADIUS} fill={slice.data.color} />
-              ) : (
-                <Path
-                  key={slice.data.id}
-                  d={createArcPath(
-                    slice.startAngle,
-                    slice.endAngle,
-                    RADIUS,
-                    CENTER_X,
-                    CENTER_Y,
-                  )}
-                  fill={slice.data.color}
-                />
-              ),
-            )}
-          </Svg>
+    <View
+      className="gap-4 overflow-hidden rounded-2xl border border-borde-lavanda bg-white"
+      style={{ borderCurve: 'continuous' }}
+    >
+      {/* Encabezado de tarjeta en Morado Principal */}
+      <View className="flex-row items-center justify-between gap-3 bg-primario px-5 py-3.5">
+        <View className="min-w-0 flex-1">
+          <Text
+            className="font-display text-2xl uppercase tracking-wider text-white"
+            numberOfLines={1}
+          >
+            {titulo}
+          </Text>
+        </View>
+        <View className="shrink-0 rounded-full bg-primario-oscuro px-3 py-1">
+          <Text
+            className="font-display text-lg tracking-wide text-amarillo"
+            style={{ fontVariant: ['tabular-nums'] }}
+            selectable
+          >
+            {totalVotos.toLocaleString()} VOTOS
+          </Text>
         </View>
       </View>
 
-      {mostrarLeyenda ? (
-        <View className="gap-2">
-          {datos.map((d) => {
-            const porcentaje = ((d.votos / totalVotos) * 100).toFixed(1);
-            return (
-              <View
-                key={d.id}
-                className="flex-row items-center justify-between gap-3"
-              >
-                <View className="flex-row flex-1 items-center gap-3">
-                  <View
-                    className="h-3 w-3 rounded-full"
-                    style={{ backgroundColor: d.color }}
+      <View className="gap-4 px-5 pb-5">
+        {/* Gráfico circular de distribución */}
+        <View className="items-center rounded-2xl bg-malva py-3">
+          <View className="w-full" style={{ maxWidth: 196, aspectRatio: 1 }}>
+            <Svg width="100%" height="100%" viewBox="0 0 240 240" accessible={false}>
+              {slices.map((slice) =>
+                slice.data.votos === totalVotos ? (
+                  <Circle
+                    key={slice.data.id}
+                    cx={CENTER_X}
+                    cy={CENTER_Y}
+                    r={RADIUS}
+                    fill={slice.data.color}
                   />
-                  <View className="flex-1">
-                    <Text className="font-semibold text-texto" selectable>{d.nombre}</Text>
-                    {d.organizacion ? <Text className="text-xs text-slate-600" selectable>{d.organizacion}</Text> : null}
-                  </View>
-                </View>
-                <View className="items-end">
-                  <Text className="font-bold text-texto" selectable>{d.votos.toLocaleString()}</Text>
-                  <Text className="text-xs text-slate-600" selectable>{porcentaje}%</Text>
-                </View>
-              </View>
-            );
-          })}
-          <View className="border-t border-slate-200 pt-2">
-            <Text className="text-sm font-semibold text-slate-700" selectable>
-              Total: {totalVotos.toLocaleString()} votos
-            </Text>
+                ) : (
+                  <Path
+                    key={slice.data.id}
+                    d={createArcPath(
+                      slice.startAngle,
+                      slice.endAngle,
+                      RADIUS,
+                      CENTER_X,
+                      CENTER_Y,
+                    )}
+                    fill={slice.data.color}
+                  />
+                ),
+              )}
+            </Svg>
           </View>
         </View>
-      ) : null}
+
+        {/* Barras horizontales de alto contraste para lectura rápida Exit Poll */}
+        {mostrarLeyenda ? (
+          <View className="gap-3">
+            {datos.map((d, index) => {
+              const porcentajeNum = (d.votos / totalVotos) * 100;
+              const porcentaje = porcentajeNum.toFixed(1);
+              const esLider = d.id === liderId;
+              const anchoBarra = `${Math.max(0, Math.min(100, porcentajeNum))}%` as const;
+              const bgRow = esLider
+                ? 'border-primario bg-lavanda'
+                : index % 2 === 1
+                  ? 'border-beige-borde bg-vainilla'
+                  : 'border-borde bg-white';
+
+              return (
+                <View
+                  key={d.id}
+                  className={`gap-2 rounded-xl border p-3.5 ${bgRow}`}
+                  style={{ borderCurve: 'continuous' }}
+                >
+                  <View className="flex-row items-start justify-between gap-3">
+                    <View className="min-w-0 flex-1 flex-row items-start gap-2.5">
+                      <View
+                        className="mt-1 h-3.5 w-3.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: esLider ? '#6F2C91' : d.color }}
+                      />
+                      <View className="min-w-0 flex-1 gap-0.5">
+                        <View className="flex-row flex-wrap items-center gap-2">
+                          <Text
+                            className="font-body-bold text-sm text-texto"
+                            selectable
+                          >
+                            {d.nombre}
+                          </Text>
+                          {esLider ? (
+                            <View className="shrink-0 rounded-full bg-primario px-2.5 py-0.5">
+                              <Text className="font-body-bold text-[10px] uppercase tracking-wider text-amarillo">
+                                Líder
+                              </Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        {d.organizacion ? (
+                          <Text
+                            className="font-body text-xs text-texto-secundario"
+                            selectable
+                          >
+                            {d.organizacion}
+                          </Text>
+                        ) : null}
+                      </View>
+                    </View>
+
+                    <View className="shrink-0 items-end">
+                      <Text
+                        className="font-display text-3xl leading-8 text-primario"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        selectable
+                      >
+                        {porcentaje}%
+                      </Text>
+                      <Text
+                        className="font-body-semibold text-xs text-texto"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                        selectable
+                      >
+                        {d.votos.toLocaleString()} votos
+                      </Text>
+                    </View>
+                  </View>
+
+                  {/* Barra de progreso horizontal */}
+                  <View className="h-3 w-full overflow-hidden rounded-full bg-gris-claro">
+                    <View
+                      className="h-full rounded-full"
+                      style={{
+                        width: anchoBarra,
+                        backgroundColor: esLider ? '#6F2C91' : d.color,
+                      }}
+                    />
+                  </View>
+                </View>
+              );
+            })}
+
+            <View className="flex-row items-center justify-between rounded-xl bg-crema px-4 py-2.5">
+              <Text
+                className="font-body-semibold text-xs uppercase tracking-wide text-texto"
+                selectable
+              >
+                Total contabilizado
+              </Text>
+              <Text
+                className="font-body-bold text-sm text-primario"
+                style={{ fontVariant: ['tabular-nums'] }}
+                selectable
+              >
+                Total: {totalVotos.toLocaleString()} votos
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }

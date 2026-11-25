@@ -3,16 +3,19 @@ import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
-import { inicioSesionSchema } from '@/domain/schemas/authSchemas';
 import type { z } from 'zod';
+import { colors, fontFamilies, radius } from '@theme/tokens';
+import { inicioSesionSchema } from '@/domain/schemas/authSchemas';
 import { AuthShell } from '@/presentation/components/auth/AuthShell';
 import { AuthTextField } from '@/presentation/components/auth/AuthTextField';
 import {
   FeedbackBottomSheet,
   type FeedbackContent,
 } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { clearAuthError, signIn } from '@/presentation/store/slices/authSlice';
+import { hapticSuccess } from '@/presentation/utils/haptics';
 
 type LoginValues = z.input<typeof inicioSesionSchema>;
 
@@ -34,6 +37,7 @@ export function LoginScreen() {
     dispatch(clearAuthError());
     try {
       await dispatch(signIn(credenciales)).unwrap();
+      hapticSuccess();
     } catch (error) {
       setFeedback({
         title: 'No se pudo iniciar sesión',
@@ -47,7 +51,7 @@ export function LoginScreen() {
   return (
     <AuthShell
       title="Iniciar sesión"
-      description="Ingrese con las credenciales que le entregó su coordinador."
+      description="Ingrese con las credenciales institucionales entregadas por su coordinador."
     >
       <Controller
         control={control}
@@ -55,6 +59,7 @@ export function LoginScreen() {
         render={({ field, fieldState }) => (
           <AuthTextField
             label="Correo electrónico"
+            placeholder="usuario@organizacion.ec"
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -72,6 +77,7 @@ export function LoginScreen() {
         render={({ field, fieldState }) => (
           <AuthTextField
             label="Contraseña"
+            placeholder="Ingrese su contraseña"
             autoCapitalize="none"
             autoComplete="password"
             secureTextEntry
@@ -84,34 +90,83 @@ export function LoginScreen() {
           />
         )}
       />
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        disabled={isSubmitting || cargando}
+      <AnimatedButton
+        title={isSubmitting || cargando ? 'Verificando…' : 'Ingresar de forma segura'}
+        variant="primaryAccent"
+        loading={isSubmitting || cargando}
+        haptic="medium"
         onPress={() => {
           void handleSubmit(onSubmit)();
         }}
-      >
-        <Text className="font-bold text-white" selectable>
-          {isSubmitting || cargando ? 'Verificando…' : 'Ingresar de forma segura'}
-        </Text>
-      </Pressable>
+      />
       {authError ? (
-        <Text className="text-sm leading-5 text-red-700" selectable>
-          {authError}
-        </Text>
+        <View
+          style={{
+            backgroundColor: colors.errorFondo,
+            borderColor: colors.errorBorde,
+            borderWidth: 1,
+            borderRadius: radius.md,
+            padding: 12,
+          }}
+        >
+          <Text
+            style={{
+              fontFamily: fontFamilies.bodyMedium,
+              fontSize: 13,
+              lineHeight: 19,
+              color: colors.error,
+            }}
+            selectable
+          >
+            {authError}
+          </Text>
+        </View>
       ) : null}
-      <View className="items-center gap-3">
+      <View className="items-center gap-3 pt-1">
         <Link href="/(auth)/recover-password" asChild>
-          <Pressable accessibilityRole="link" className="p-2">
-            <Text className="font-semibold text-secundario" selectable>
+          <Pressable
+            accessibilityRole="link"
+            style={{
+              minHeight: 48,
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingHorizontal: 12,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fontFamilies.bodyBold,
+                fontSize: 14,
+                color: colors.moradoPrincipal,
+              }}
+              selectable
+            >
               ¿Olvidó su contraseña?
             </Text>
           </Pressable>
         </Link>
-        <Text className="text-center text-sm text-slate-500" selectable>
-          ¿Necesita acceso? Solicítelo a su coordinador provincial.
-        </Text>
+        <View
+          style={{
+            width: '100%',
+            backgroundColor: colors.lavandaSuave,
+            borderRadius: radius.md,
+            paddingHorizontal: 14,
+            paddingVertical: 10,
+          }}
+        >
+          <Text
+            style={{
+              textAlign: 'center',
+              fontFamily: fontFamilies.bodyMedium,
+              fontSize: 12,
+              lineHeight: 18,
+              color: colors.grisCarbon,
+            }}
+            selectable
+          >
+            ¿Necesita acceso? Solicite el aprovisionamiento a su coordinador provincial o de recinto.
+          </Text>
+        </View>
       </View>
       <FeedbackBottomSheet
         content={feedback}

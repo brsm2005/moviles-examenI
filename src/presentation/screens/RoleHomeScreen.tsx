@@ -1,13 +1,20 @@
-import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import { ScrollView, Text, View } from 'react-native';
+import { colors, fontFamilies, radius, shadows } from '@theme/tokens';
 import type { RolPerfil } from '@/domain/entities/Perfil';
 import {
   FeedbackBottomSheet,
   type FeedbackContent,
 } from '@/presentation/components/auth/FeedbackBottomSheet';
-import { useAppDispatch } from '@/presentation/store';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
+import { RoleBadge } from '@/presentation/components/ui/RoleBadge';
+import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { signOut } from '@/presentation/store/slices/authSlice';
+
+const logoRedondo = require('../../../assets/images/logo-redondo.jpg');
 
 interface RoleHomeScreenProps {
   role: RolPerfil;
@@ -15,18 +22,13 @@ interface RoleHomeScreenProps {
   description: string;
 }
 
-const roleLabels: Record<RolPerfil, string> = {
-  COORDINADOR_PROVINCIAL: 'Coordinación provincial',
-  COORDINADOR_RECINTO: 'Coordinación de recinto',
-  VEEDOR: 'Veeduría electoral',
-};
-
 export function RoleHomeScreen({
   role,
   title,
   description,
 }: RoleHomeScreenProps) {
   const dispatch = useAppDispatch();
+  const perfil = useAppSelector((state) => state.auth.perfil);
   const [feedback, setFeedback] = useState<FeedbackContent | null>(null);
 
   const handleSignOut = async () => {
@@ -44,70 +46,238 @@ export function RoleHomeScreen({
   };
 
   return (
-    <View className="flex-1 gap-6 bg-fondo px-6 py-10">
-      <View className="gap-2">
-        <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
-          {roleLabels[role].toUpperCase()}
-        </Text>
-        <Text className="text-3xl font-bold text-texto" selectable>
-          {title}
-        </Text>
-        <Text className="text-base leading-6 text-slate-600" selectable>
+    <ScrollView
+      className="flex-1"
+      style={{ backgroundColor: colors.malvaPalido }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: 20, gap: 18, paddingBottom: 40 }}
+    >
+      {/* Tarjeta institucional del perfil autenticado */}
+      <View
+        style={{
+          backgroundColor: colors.moradoPrincipal,
+          borderRadius: radius.xl,
+          borderCurve: 'continuous',
+          padding: 20,
+          gap: 14,
+          boxShadow: shadows.raised,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          <View
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: radius.full,
+              overflow: 'hidden',
+              borderWidth: 2,
+              borderColor: colors.amarilloPrincipal,
+              flexShrink: 0,
+            }}
+          >
+            <Image
+              source={logoRedondo}
+              contentFit="cover"
+              style={{ width: '100%', height: '100%' }}
+              accessibilityLabel="Emblema de perfil"
+            />
+          </View>
+          <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+            <Text
+              numberOfLines={2}
+              style={{
+                fontFamily: fontFamilies.display,
+                fontSize: 30,
+                lineHeight: 32,
+                letterSpacing: 0.7,
+                color: colors.blancoPuro,
+                textTransform: 'uppercase',
+              }}
+              selectable
+            >
+              {title}
+            </Text>
+            {perfil?.nombresCompletos ? (
+              <Text
+                numberOfLines={2}
+                style={{
+                  fontFamily: fontFamilies.bodySemiBold,
+                  fontSize: 14,
+                  color: colors.amarilloPrincipal,
+                }}
+                selectable
+              >
+                {perfil.nombresCompletos}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        <Text
+          style={{
+            fontFamily: fontFamilies.bodyMedium,
+            fontSize: 14,
+            lineHeight: 20,
+            color: colors.malvaPalido,
+          }}
+          selectable
+        >
           {description}
         </Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <RoleBadge role={role} />
+          <View
+            style={{
+              backgroundColor: colors.moradoOscuro,
+              borderRadius: radius.full,
+              paddingHorizontal: 10,
+              paddingVertical: 5,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fontFamilies.bodySemiBold,
+                fontSize: 11,
+                color: colors.blancoPuro,
+              }}
+            >
+              Operación en campo
+            </Text>
+          </View>
+        </View>
       </View>
+
+      {/* Acciones principales en campo */}
       {role !== 'VEEDOR' ? (
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-14 justify-center rounded-2xl bg-primario px-5"
+        <AnimatedButton
+          variant="yellowAction"
+          haptic="medium"
           onPress={() => router.push('/(auth)/register-subordinate')}
         >
-          <Text className="font-bold text-white" selectable>
+          <SymbolView
+            name={{ ios: 'person.badge.plus', android: 'person_add', web: 'person_add' }}
+            size={20}
+            tintColor={colors.moradoPrincipal}
+          />
+          <Text
+            style={{
+              fontFamily: fontFamilies.bodyBold,
+              fontSize: 15,
+              color: colors.moradoPrincipal,
+            }}
+            selectable
+          >
             Registrar {role === 'COORDINADOR_PROVINCIAL' ? 'coordinador de recinto' : 'veedor'}
           </Text>
-        </Pressable>
+        </AnimatedButton>
       ) : (
-        <>
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-14 justify-center rounded-2xl bg-primario px-5"
+        <View style={{ gap: 14 }}>
+          <AnimatedButton
+            variant="yellowAction"
+            haptic="medium"
             onPress={() => router.push('/(veedor)/captura')}
+            style={{ width: '100%' }}
           >
-            <Text className="font-bold text-white" selectable>
-              Capturar acta electoral
+            <SymbolView
+              name={{ ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' }}
+              size={22}
+              tintColor={colors.moradoPrincipal}
+            />
+            <Text
+              style={{
+                fontFamily: fontFamilies.display,
+                fontSize: 24,
+                letterSpacing: 0.8,
+                color: colors.moradoPrincipal,
+                textTransform: 'uppercase',
+              }}
+              selectable
+            >
+              Subir y capturar acta
             </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-14 justify-center rounded-2xl border border-slate-300 bg-white px-5"
-            onPress={() => router.push('/(actas)/historial')}
+          </AnimatedButton>
+
+          <View
+            style={{
+              backgroundColor: colors.lavandaSuave,
+              borderColor: colors.bordeLavanda,
+              borderWidth: 1,
+              borderRadius: radius.lg,
+              borderCurve: 'continuous',
+              padding: 16,
+              gap: 10,
+            }}
           >
-            <Text className="font-bold text-texto" selectable>
-              Historial de actas
+            <Text
+              style={{
+                fontFamily: fontFamilies.display,
+                fontSize: 22,
+                letterSpacing: 0.6,
+                color: colors.moradoPrincipal,
+                textTransform: 'uppercase',
+              }}
+            >
+              Seguimiento de actas
             </Text>
-          </Pressable>
-        </>
+            <Text
+              style={{
+                fontFamily: fontFamilies.bodyMedium,
+                fontSize: 13,
+                lineHeight: 19,
+                color: colors.grisCarbon,
+              }}
+            >
+              Verifique resultados leídos por OCR, corrija cifras y revise el estado de sincronización offline.
+            </Text>
+            <AnimatedButton
+              title="Abrir historial"
+              variant="primary"
+              onPress={() => router.push('/(actas)/historial')}
+            />
+          </View>
+        </View>
       )}
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
-        onPress={() => router.push('/ajustes')}
+
+      {/* Acciones secundarias de cuenta */}
+      <View
+        style={{
+          backgroundColor: colors.blancoPuro,
+          borderColor: colors.bordeNeutro,
+          borderWidth: 1,
+          borderRadius: radius.lg,
+          borderCurve: 'continuous',
+          padding: 16,
+          gap: 12,
+        }}
       >
-        <Text className="font-semibold text-texto" selectable>Perfil y ajustes</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
-        onPress={handleSignOut}
-      >
-        <Text className="font-semibold text-texto" selectable>
-          Cerrar sesión
+        <Text
+          style={{
+            fontFamily: fontFamilies.display,
+            fontSize: 20,
+            letterSpacing: 0.6,
+            color: colors.moradoPrincipal,
+            textTransform: 'uppercase',
+          }}
+        >
+          Cuenta y seguridad
         </Text>
-      </Pressable>
+        <AnimatedButton
+          title="Perfil y ajustes"
+          variant="outline"
+          onPress={() => router.push('/ajustes')}
+        />
+        <AnimatedButton
+          title="Cerrar sesión"
+          variant="neutral"
+          onPress={handleSignOut}
+        />
+      </View>
+
       <FeedbackBottomSheet
         content={feedback}
         onDismiss={() => setFeedback(null)}
       />
-    </View>
+    </ScrollView>
   );
 }

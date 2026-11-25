@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import { colors, fontFamilies, radius } from '@theme/tokens';
 import type { Acta } from '@/domain/entities/Acta';
 import type { Candidato } from '@/domain/entities/Candidato';
 import type { IActaRepository } from '@/domain/ports/IActaRepository';
@@ -17,7 +18,9 @@ import type { ICrashReportingService } from '@/domain/ports/ICrashReportingServi
 import type { ITerritorioRepository } from '@/domain/ports/ITerritorioRepository';
 import { actaVotosConfirmacionSchema } from '@/domain/schemas/actaVotosSchema';
 import { FeedbackBottomSheet, type FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppSelector } from '@/presentation/store';
+import { hapticError, hapticSuccess } from '@/presentation/utils/haptics';
 
 interface ConfirmarActaScreenProps {
   actaRepository: IActaRepository;
@@ -153,7 +156,7 @@ export function ConfirmarActaScreen({
 
   const cuadreEnTiempoReal = useMemo(() => {
     if (!formulario) return { suma: 0, totalSufragantes: 0, cuadra: false };
-    
+
     const totalSufragantes = enteroOInvalido(formulario.totalSufragantes) ?? 0;
     const votosBlancos = enteroOInvalido(formulario.votosBlancos) ?? 0;
     const votosNulos = enteroOInvalido(formulario.votosNulos) ?? 0;
@@ -181,6 +184,7 @@ export function ConfirmarActaScreen({
     };
     const validacion = actaVotosConfirmacionSchema.safeParse(resultados);
     if (!validacion.success) {
+      hapticError();
       setFeedback({
         title: 'Revise los valores del acta',
         message: validacion.error.issues[0]?.message ?? 'Los votos no son válidos.',
@@ -196,6 +200,7 @@ export function ConfirmarActaScreen({
         validacion.data,
         usuarioId,
       );
+      hapticSuccess();
       setConfirmada(true);
       setFeedback({
         title: 'Confirmación guardada',
@@ -204,6 +209,7 @@ export function ConfirmarActaScreen({
         tone: 'success',
       });
     } catch (error) {
+      hapticError();
       await crashReportingService.registrarError(
         error instanceof Error ? error : new Error(mensajeDeError(error)),
         {
@@ -224,8 +230,11 @@ export function ConfirmarActaScreen({
 
   if (cargando) {
     return (
-      <View className="flex-1 items-center justify-center bg-fondo">
-        <ActivityIndicator size="large" color="#1B365D" />
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.malvaPalido }}
+      >
+        <ActivityIndicator size="large" color={colors.moradoPrincipal} />
       </View>
     );
   }
@@ -235,153 +244,251 @@ export function ConfirmarActaScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1"
     >
-      <View className="flex-1 bg-fondo">
+      <View className="flex-1 bg-malva">
         <ScrollView
           className="flex-1"
-          contentContainerClassName="gap-5 px-5 pb-8 pt-6"
+          contentContainerClassName="gap-5 px-5 pb-10 pt-5"
           keyboardShouldPersistTaps="handled"
         >
-        <View className="gap-1">
-          <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
-            REVISIÓN HUMANA
-          </Text>
-          <Text className="text-2xl font-bold text-texto" selectable>
-            Confirme los resultados
-          </Text>
-          <Text className="text-sm leading-5 text-slate-600" selectable>
-            Corrija los dígitos y complete los campos ilegibles. No se sincronizará sin su confirmación.
-          </Text>
-          {acta ? (
-            <Text className="mt-1 text-xs text-slate-500" selectable>
-              Mesa {acta.mesaJrvId} · {acta.dignidad}
+          <View
+            style={{
+              backgroundColor: colors.moradoPrincipal,
+              borderRadius: radius.xl,
+              padding: 20,
+              gap: 6,
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fontFamilies.display,
+                fontSize: 32,
+                letterSpacing: 0.8,
+                color: colors.blancoPuro,
+                textTransform: 'uppercase',
+              }}
+              selectable
+            >
+              Confirme los resultados
             </Text>
-          ) : null}
-        </View>
+            <Text
+              style={{
+                fontFamily: fontFamilies.bodyMedium,
+                fontSize: 13,
+                lineHeight: 19,
+                color: colors.malvaPalido,
+              }}
+              selectable
+            >
+              Corrija los dígitos y complete los campos ilegibles. No se sincronizará sin su confirmación.
+            </Text>
+            {acta ? (
+              <View
+                style={{
+                  alignSelf: 'flex-start',
+                  marginTop: 6,
+                  backgroundColor: colors.moradoOscuro,
+                  borderRadius: radius.full,
+                  paddingHorizontal: 12,
+                  paddingVertical: 5,
+                }}
+              >
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.bodyBold,
+                    fontSize: 12,
+                    color: colors.amarilloPrincipal,
+                  }}
+                  selectable
+                >
+                  Mesa {acta.mesaJrvId} · {acta.dignidad}
+                </Text>
+              </View>
+            ) : null}
+          </View>
 
-        {!acta || !formulario ? (
-          <Text className="text-sm text-red-700" selectable>
-            No se pudieron cargar los datos locales del acta.
-          </Text>
-        ) : acta.estado !== 'NEEDS_CONFIRMATION' ? (
-          <Text className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" selectable>
-            El acta se encuentra en estado {acta.estado}; no está disponible para confirmación.
-          </Text>
-        ) : (
-          <>
-            <CampoNumero
-              etiqueta="Total de sufragantes"
-              valor={formulario.totalSufragantes}
-              onChangeText={(valor) => actualizarCampo('totalSufragantes', valor)}
-            />
-            <CampoNumero
-              etiqueta="Votos blancos"
-              valor={formulario.votosBlancos}
-              onChangeText={(valor) => actualizarCampo('votosBlancos', valor)}
-            />
-            <CampoNumero
-              etiqueta="Votos nulos"
-              valor={formulario.votosNulos}
-              onChangeText={(valor) => actualizarCampo('votosNulos', valor)}
-            />
-            <View className="gap-3">
-              <Text className="font-bold text-texto" selectable>
-                Votos por candidato
+          {!acta || !formulario ? (
+            <View className="rounded-2xl border border-red-300 bg-red-50 p-4">
+              <Text className="font-body-semibold text-sm text-red-800" selectable>
+                No se pudieron cargar los datos locales del acta.
               </Text>
-              {acta.votosCandidatos.map((voto, indice) => (
-                <CampoNumero
-                  key={voto.candidatoId}
-                  etiqueta={
-                    candidatosPorId.get(voto.candidatoId)?.nombresCompletos ??
-                    `Candidato ${indice + 1}`
-                  }
-                  valor={formulario.votosCandidatos[indice] ?? ''}
-                  onChangeText={(valor) =>
-                    actualizarVotoCandidato(indice, valor)
-                  }
-                />
-              ))}
             </View>
+          ) : acta.estado !== 'NEEDS_CONFIRMATION' ? (
+            <View className="rounded-2xl border border-primario bg-crema p-4">
+              <Text className="font-body-semibold text-sm text-texto" selectable>
+                El acta se encuentra en estado {acta.estado}; no está disponible para confirmación.
+              </Text>
+            </View>
+          ) : (
+            <>
+              <View className="gap-3.5 rounded-2xl border border-borde-lavanda bg-white p-4">
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.display,
+                    fontSize: 24,
+                    color: colors.moradoPrincipal,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  Totales del acta
+                </Text>
+                <CampoNumero
+                  etiqueta="Total de sufragantes"
+                  valor={formulario.totalSufragantes}
+                  destacado
+                  onChangeText={(valor) => actualizarCampo('totalSufragantes', valor)}
+                />
+                <View className="flex-row gap-3">
+                  <View className="flex-1">
+                    <CampoNumero
+                      etiqueta="Votos blancos"
+                      valor={formulario.votosBlancos}
+                      onChangeText={(valor) => actualizarCampo('votosBlancos', valor)}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <CampoNumero
+                      etiqueta="Votos nulos"
+                      valor={formulario.votosNulos}
+                      onChangeText={(valor) => actualizarCampo('votosNulos', valor)}
+                    />
+                  </View>
+                </View>
+              </View>
 
-            <View className={`mt-4 rounded-xl border p-4 ${
-              cuadreEnTiempoReal.totalSufragantes === 0
-                ? 'border-slate-300 bg-slate-50'
-                : cuadreEnTiempoReal.cuadra
-                  ? 'border-green-300 bg-green-50'
-                  : 'border-red-300 bg-red-50'
-            }`}>
-              <View className="flex-row items-center justify-between gap-3">
-                <View className="flex-1">
-                  <Text className={`font-bold ${
+              <View className="gap-3 rounded-2xl border border-borde-lavanda bg-white p-4">
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.display,
+                    fontSize: 24,
+                    color: colors.moradoPrincipal,
+                    textTransform: 'uppercase',
+                  }}
+                  selectable
+                >
+                  Votos por candidato
+                </Text>
+                {acta.votosCandidatos.map((voto, indice) => (
+                  <CampoNumero
+                    key={voto.candidatoId}
+                    etiqueta={
+                      candidatosPorId.get(voto.candidatoId)?.nombresCompletos ??
+                      `Candidato ${indice + 1}`
+                    }
+                    valor={formulario.votosCandidatos[indice] ?? ''}
+                    alterno={indice % 2 === 1}
+                    onChangeText={(valor) =>
+                      actualizarVotoCandidato(indice, valor)
+                    }
+                  />
+                ))}
+              </View>
+
+              {/* Verificación de cuadre aritmético en tiempo real */}
+              <View
+                style={{
+                  borderRadius: radius.lg,
+                  borderWidth: 1.5,
+                  padding: 16,
+                  backgroundColor:
                     cuadreEnTiempoReal.totalSufragantes === 0
-                      ? 'text-slate-900'
+                      ? colors.cremaLimon
                       : cuadreEnTiempoReal.cuadra
-                        ? 'text-green-900'
-                        : 'text-red-900'
-                  }`} selectable>
+                        ? colors.exitoFondo
+                        : colors.errorFondo,
+                  borderColor:
+                    cuadreEnTiempoReal.totalSufragantes === 0
+                      ? colors.advertenciaBorde
+                      : cuadreEnTiempoReal.cuadra
+                        ? colors.exitoBorde
+                        : colors.errorBorde,
+                  gap: 6,
+                }}
+              >
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.display,
+                      fontSize: 24,
+                      color:
+                        cuadreEnTiempoReal.totalSufragantes === 0
+                          ? colors.moradoPrincipal
+                          : cuadreEnTiempoReal.cuadra
+                            ? colors.exito
+                            : colors.error,
+                      textTransform: 'uppercase',
+                    }}
+                    selectable
+                  >
                     {cuadreEnTiempoReal.totalSufragantes === 0
                       ? 'Verificación de cuadre'
                       : cuadreEnTiempoReal.cuadra
                         ? '✓ Cuadre correcto'
                         : '✗ Cuadre incorrecto'}
                   </Text>
-                  <Text className={`mt-1 text-sm leading-5 ${
-                    cuadreEnTiempoReal.totalSufragantes === 0
-                      ? 'text-slate-700'
-                      : cuadreEnTiempoReal.cuadra
-                        ? 'text-green-800'
-                        : 'text-red-800'
-                  }`} selectable>
-                    {cuadreEnTiempoReal.totalSufragantes === 0
-                      ? 'Complete los campos para verificar que la suma de votos coincida.'
-                      : cuadreEnTiempoReal.cuadra
-                        ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide con el total de sufragantes.`
-                        : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
+                  <Text
+                    style={{
+                      fontFamily: fontFamilies.display,
+                      fontSize: 24,
+                      color: colors.grisCarbon,
+                      fontVariant: ['tabular-nums'],
+                    }}
+                  >
+                    {cuadreEnTiempoReal.suma} / {cuadreEnTiempoReal.totalSufragantes}
                   </Text>
                 </View>
-              </View>
-            </View>
-
-            {acta.alertaUbicacion ? (
-              <Text className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900" selectable>
-                ! La ubicación de esta acta requiere revisión.
-              </Text>
-            ) : null}
-            <Pressable
-              accessibilityRole="button"
-              disabled={guardando || confirmada}
-              className={`min-h-12 items-center justify-center rounded-xl px-4 ${
-                guardando || confirmada ? 'bg-slate-400' : 'bg-primario'
-              }`}
-              onPress={() => void confirmar()}
-            >
-              {guardando ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="font-bold text-white" selectable>
-                  Confirmar revisión humana
+                <Text
+                  style={{
+                    fontFamily: fontFamilies.bodyMedium,
+                    fontSize: 13,
+                    lineHeight: 19,
+                    color: colors.grisCarbon,
+                  }}
+                  selectable
+                >
+                  {cuadreEnTiempoReal.totalSufragantes === 0
+                    ? 'Complete los campos para verificar que la suma de votos coincida.'
+                    : cuadreEnTiempoReal.cuadra
+                      ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide exactamente con el total de sufragantes.`
+                      : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
                 </Text>
-              )}
-            </Pressable>
-          </>
-        )}
+              </View>
 
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-11 items-center justify-center"
-          onPress={() => router.back()}
-        >
-          <Text className="font-semibold text-slate-600" selectable>
-            Volver
-          </Text>
-        </Pressable>
-      </ScrollView>
-      <FeedbackBottomSheet
-        content={feedback}
-        onDismiss={() => {
-          setFeedback(null);
-          if (confirmada) router.back();
-        }}
-      />
+              {acta.alertaUbicacion ? (
+                <View className="rounded-xl border border-primario bg-crema p-4">
+                  <Text className="font-body-bold text-sm text-texto" selectable>
+                    ! La ubicación de esta acta requiere revisión.
+                  </Text>
+                </View>
+              ) : null}
+
+              <AnimatedButton
+                title="Confirmar revisión humana"
+                variant="primaryAccent"
+                disabled={guardando || confirmada}
+                loading={guardando}
+                haptic="medium"
+                onPress={() => void confirmar()}
+              />
+            </>
+          )}
+
+          <Pressable
+            accessibilityRole="button"
+            className="min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white"
+            onPress={() => router.back()}
+          >
+            <Text className="font-body-bold text-primario" selectable>
+              Volver
+            </Text>
+          </Pressable>
+        </ScrollView>
+        <FeedbackBottomSheet
+          content={feedback}
+          onDismiss={() => {
+            setFeedback(null);
+            if (confirmada) router.back();
+          }}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -390,23 +497,63 @@ export function ConfirmarActaScreen({
 interface CampoNumeroProps {
   etiqueta: string;
   valor: string;
+  destacado?: boolean;
+  alterno?: boolean;
   onChangeText: (valor: string) => void;
 }
 
-function CampoNumero({ etiqueta, valor, onChangeText }: CampoNumeroProps) {
+function CampoNumero({
+  etiqueta,
+  valor,
+  destacado = false,
+  alterno = false,
+  onChangeText,
+}: CampoNumeroProps) {
   return (
-    <View className="gap-1">
-      <Text className="text-sm font-semibold text-texto" selectable>
+    <View
+      style={{
+        gap: 6,
+        borderRadius: radius.md,
+        padding: destacado ? 12 : 10,
+        backgroundColor: destacado
+          ? colors.lavandaSuave
+          : alterno
+            ? colors.vainillaClaro
+            : colors.blancoPuro,
+      }}
+    >
+      <Text
+        style={{
+          fontFamily: fontFamilies.bodyBold,
+          fontSize: 13,
+          color: destacado ? colors.moradoPrincipal : colors.grisCarbon,
+        }}
+        selectable
+      >
         {etiqueta}
       </Text>
       <TextInput
         accessibilityLabel={etiqueta}
-        className="min-h-12 rounded-xl border border-slate-300 bg-white px-4 text-base text-texto"
         keyboardType="number-pad"
         value={valor}
         onChangeText={onChangeText}
-        placeholder="Ingrese el valor"
+        placeholder="0"
+        placeholderTextColor={colors.textoSecundario}
+        selectionColor={colors.moradoPrincipal}
         selectTextOnFocus
+        style={{
+          minHeight: 54,
+          borderRadius: radius.md,
+          borderWidth: 1.5,
+          borderColor: destacado ? colors.moradoPrincipal : colors.bordeLavanda,
+          backgroundColor: colors.blancoPuro,
+          paddingHorizontal: 16,
+          fontFamily: fontFamilies.display,
+          fontSize: 30,
+          letterSpacing: 1,
+          fontVariant: ['tabular-nums'],
+          color: colors.grisCarbon,
+        }}
       />
     </View>
   );

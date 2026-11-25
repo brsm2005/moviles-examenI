@@ -58,12 +58,16 @@ export function HistorialActasScreen({
 
   useEffect(() => {
     montada.current = true;
-    return () => { montada.current = false; };
+    return () => {
+      montada.current = false;
+    };
   }, []);
 
   useEffect(() => {
     sesionActual.current = perfil?.id;
-    return () => { sesionActual.current = undefined; };
+    return () => {
+      sesionActual.current = undefined;
+    };
   }, [perfil?.id]);
 
   const cargar = useCallback(() => {
@@ -134,30 +138,34 @@ export function HistorialActasScreen({
   };
 
   return (
-    <View className="flex-1 bg-fondo">
+    <View className="flex-1 bg-malva">
       <ScrollView
         className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerClassName="gap-5 px-5 pb-10 pt-5"
+        contentContainerClassName="gap-5 px-5 pb-12 pt-5"
         refreshControl={
-          <RefreshControl refreshing={cargando} onRefresh={cargar} />
+          <RefreshControl
+            refreshing={cargando}
+            tintColor="#6F2C91"
+            colors={['#6F2C91']}
+            onRefresh={cargar}
+          />
         }
       >
-        <View className="gap-1">
-          <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
-            REGISTRO ELECTORAL
-          </Text>
-          <Text className="text-3xl font-bold text-texto" selectable>
+        {/* Cabecera Morado Principal */}
+        <View className="gap-1.5 rounded-2xl bg-primario p-5">
+          <Text className="font-display text-4xl uppercase tracking-wider text-white" selectable>
             Historial de actas
           </Text>
-          <Text className="text-sm leading-5 text-slate-600" selectable>
-            Revise el procesamiento pendiente o consulte las actas enviadas de sus mesas.
+          <Text className="font-body text-sm leading-5 text-malva" selectable>
+            Revise las actas en cola offline o verifique las enviadas de sus mesas.
           </Text>
         </View>
 
+        {/* Selector de pestañas */}
         <View
           accessibilityRole="tablist"
-          className="flex-row rounded-2xl bg-slate-200 p-1"
+          className="flex-row gap-1.5 rounded-2xl border border-borde-lavanda bg-lavanda p-1.5"
         >
           <BotonPestana
             activa={pestana === 'pendientes'}
@@ -174,16 +182,16 @@ export function HistorialActasScreen({
         </View>
 
         {error ? (
-          <View className="gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
-            <Text className="text-sm leading-5 text-red-800" selectable>
+          <View className="gap-3 rounded-2xl border border-red-300 bg-red-50 p-4">
+            <Text className="font-body text-sm leading-5 text-red-800" selectable>
               {error}
             </Text>
             <Pressable
               accessibilityRole="button"
-              className="min-h-11 justify-center"
+              className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
               onPress={cargar}
             >
-              <Text className="font-bold text-red-900" selectable>
+              <Text className="font-body-bold text-amarillo" selectable>
                 Reintentar
               </Text>
             </Pressable>
@@ -191,20 +199,20 @@ export function HistorialActasScreen({
         ) : null}
 
         {!cargado && cargando ? (
-          <View className="items-center gap-3 py-12">
-            <ActivityIndicator size="large" color="#1B365D" />
-            <Text className="text-sm text-slate-600" selectable>
+          <View className="items-center gap-3 rounded-2xl bg-white py-12">
+            <ActivityIndicator size="large" color="#6F2C91" />
+            <Text className="font-body text-sm text-texto-secundario" selectable>
               Cargando actas guardadas…
             </Text>
           </View>
         ) : actasVisibles.length === 0 ? (
-          <View className="gap-2 rounded-2xl border border-slate-200 bg-white p-5">
-            <Text className="text-lg font-bold text-texto" selectable>
+          <View className="gap-2 rounded-2xl border border-borde-lavanda bg-white p-6">
+            <Text className="font-display text-2xl uppercase text-primario" selectable>
               {pestana === 'pendientes'
                 ? 'Sin actas pendientes'
                 : 'Aún no hay actas enviadas'}
             </Text>
-            <Text className="text-sm leading-5 text-slate-600" selectable>
+            <Text className="font-body text-sm leading-5 text-texto-secundario" selectable>
               {pestana === 'pendientes'
                 ? 'Las capturas y el OCR diferido aparecerán aquí. Cuando el OCR termine, recibirá un aviso para verificar los valores.'
                 : 'Las actas confirmadas y sincronizadas aparecerán en esta pestaña.'}
@@ -212,10 +220,11 @@ export function HistorialActasScreen({
           </View>
         ) : (
           <View className="gap-3">
-            {actasVisibles.map((acta) => (
+            {actasVisibles.map((acta, index) => (
               <TarjetaActa
                 key={acta.id}
                 acta={acta}
+                alterna={index % 2 === 1}
                 onPress={() => abrirActa(acta)}
                 onReintentar={
                   perfil?.id === acta.creadoPor && acta.estado === 'PENDING_OCR'
@@ -252,20 +261,21 @@ function BotonPestana({
       accessibilityRole="tab"
       accessibilityState={{ selected: activa }}
       className={`min-h-12 flex-1 flex-row items-center justify-center gap-2 rounded-xl px-3 ${
-        activa ? 'bg-white' : 'bg-transparent'
+        activa ? 'bg-primario' : 'bg-transparent'
       }`}
       onPress={onPress}
     >
       <Text
-        className={`font-bold ${activa ? 'text-texto' : 'text-slate-600'}`}
+        className={`font-body-bold text-sm ${activa ? 'text-white' : 'text-primario'}`}
         selectable
       >
         {etiqueta}
       </Text>
       <Text
-        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-          activa ? 'bg-blue-50 text-primario' : 'bg-slate-300 text-slate-700'
+        className={`overflow-hidden rounded-full px-2.5 py-0.5 font-display text-base ${
+          activa ? 'bg-primario-oscuro text-amarillo' : 'bg-white text-primario'
         }`}
+        style={{ fontVariant: ['tabular-nums'] }}
         selectable
       >
         {cantidad}
@@ -276,61 +286,87 @@ function BotonPestana({
 
 interface TarjetaActaProps {
   acta: Acta;
+  alterna: boolean;
   onPress: () => void;
   onReintentar?: () => void;
   reintentando: boolean;
   reintentoDeshabilitado: boolean;
 }
 
-function TarjetaActa({ acta, onPress, onReintentar, reintentando, reintentoDeshabilitado }: TarjetaActaProps) {
+function TarjetaActa({
+  acta,
+  alterna,
+  onPress,
+  onReintentar,
+  reintentando,
+  reintentoDeshabilitado,
+}: TarjetaActaProps) {
   const sePuedeAbrir =
     acta.estado === 'NEEDS_CONFIRMATION' ||
     acta.estado === 'PENDING_SYNC' ||
     acta.estado === 'SYNCED';
 
+  const requiereAtencion =
+    acta.estado === 'NEEDS_CONFIRMATION' || acta.estado === 'PENDING_SYNC';
+
   const contenido = (
-    <View className="gap-3 rounded-2xl border border-slate-200 bg-white p-4">
+    <View
+      className={`gap-3 rounded-2xl border p-4 ${
+        requiereAtencion
+          ? 'border-primario bg-crema'
+          : alterna
+            ? 'border-beige-borde bg-vainilla'
+            : 'border-borde-lavanda bg-white'
+      }`}
+      style={{ borderCurve: 'continuous' }}
+    >
       <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1 gap-1">
-          <Text className="text-base font-bold text-texto" selectable>
+        <View className="min-w-0 flex-1 gap-1">
+          <Text className="font-display text-2xl uppercase tracking-wide text-primario" selectable>
             {obtenerEtiqueta(acta)}
           </Text>
-          <Text className="text-xs text-slate-500" selectable>
+          <Text className="font-body text-xs text-texto-secundario" selectable>
             Actualizada {new Date(acta.actualizadoEn).toLocaleString()}
           </Text>
         </View>
         <Text
-          className={`rounded-full px-3 py-1 text-xs font-bold ${
+          className={`shrink-0 overflow-hidden rounded-full px-3 py-1 font-body-bold text-xs ${
             acta.estado === 'NEEDS_CONFIRMATION'
-              ? 'bg-amber-100 text-amber-900'
+              ? 'bg-primario text-amarillo'
               : acta.estado === 'SYNCED'
-                ? 'bg-emerald-100 text-emerald-900'
-                : 'bg-blue-100 text-blue-900'
+                ? 'bg-green-100 text-green-900'
+                : 'bg-lavanda text-primario'
           }`}
           selectable
         >
           {etiquetasEstado[acta.estado]}
         </Text>
       </View>
+
       {acta.alertaUbicacion ? (
-        <Text className="text-sm font-bold text-amber-900" selectable>
-          ! Ubicación marcada para revisión
-        </Text>
+        <View className="rounded-xl bg-white px-3 py-2">
+          <Text className="font-body-bold text-xs text-primario" selectable>
+            ! Ubicación marcada para revisión
+          </Text>
+        </View>
       ) : null}
+
       {acta.estado === 'NEEDS_CONFIRMATION' ? (
-        <Text className="text-sm font-semibold text-primario" selectable>
-          El OCR terminó. Revise y confirme manualmente.
+        <Text className="font-body-semibold text-sm text-texto" selectable>
+          El OCR terminó. Revise y confirme manualmente antes de enviar.
         </Text>
       ) : acta.estado === 'PENDING_SYNC' ? (
-        <Text className="text-sm text-slate-600" selectable>
-          Verifique la conexión; el envío se reintentará automáticamente.
+        <Text className="font-body-semibold text-sm text-texto" selectable>
+          Pendiente de sincronización · Se enviará automáticamente al recuperar conexión.
         </Text>
       ) : null}
+
       {sePuedeAbrir ? (
-        <Text className="text-sm font-bold text-primario" selectable>
-          {acta.estado === 'SYNCED' ? 'Consultar o corregir' : 'Abrir acta'}
+        <Text className="font-body-bold text-sm text-primario" selectable>
+          {acta.estado === 'SYNCED' ? 'Consultar o corregir →' : 'Abrir acta para revisar →'}
         </Text>
       ) : null}
+
       {onReintentar ? (
         <Pressable
           accessibilityRole="button"
@@ -338,11 +374,16 @@ function TarjetaActa({ acta, onPress, onReintentar, reintentando, reintentoDesha
           accessibilityState={{ disabled: reintentoDeshabilitado, busy: reintentando }}
           disabled={reintentoDeshabilitado}
           onPress={onReintentar}
-          className={`min-h-11 items-center justify-center rounded-xl px-4 ${
-            reintentoDeshabilitado ? 'bg-slate-400' : 'bg-primario'
+          className={`min-h-12 items-center justify-center rounded-xl px-4 ${
+            reintentoDeshabilitado ? 'bg-gris-claro' : 'bg-primario'
           }`}
         >
-          <Text className="font-bold text-white" selectable>
+          <Text
+            className={`font-body-bold text-sm ${
+              reintentoDeshabilitado ? 'text-texto-secundario' : 'text-amarillo'
+            }`}
+            selectable
+          >
             {reintentando ? 'Procesando OCR…' : 'Reintentar OCR'}
           </Text>
         </Pressable>

@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Pressable, Text } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import type { z } from 'zod';
+import { colors, fontFamilies, radius } from '@theme/tokens';
 import { registroSubordinadoSchema } from '@/domain/schemas/authSchemas';
 import { AuthShell } from '@/presentation/components/auth/AuthShell';
 import { AuthTextField } from '@/presentation/components/auth/AuthTextField';
-import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import {
   FeedbackBottomSheet,
   type FeedbackContent,
 } from '@/presentation/components/auth/FeedbackBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
+import { RoleBadge } from '@/presentation/components/ui/RoleBadge';
+import { volverSeguro } from '@/presentation/navigation/volverSeguro';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import {
   clearCreatedSubordinate,
@@ -73,9 +76,33 @@ export function SubordinateRegistrationScreen() {
       title="Registrar subordinado"
       description="La cuenta se crea mediante el servicio autorizado y recibe un correo de verificación."
     >
-      <Text className="rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-primario" selectable>
-        Rol asignado: {rol === 'COORDINADOR_RECINTO' ? 'Coordinador de recinto' : 'Veedor'}
-      </Text>
+      <View
+        style={{
+          backgroundColor: colors.lavandaSuave,
+          borderColor: colors.bordeLavanda,
+          borderWidth: 1,
+          borderRadius: radius.md,
+          padding: 12,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 8,
+        }}
+      >
+        <Text
+          style={{
+            fontFamily: fontFamilies.bodySemiBold,
+            fontSize: 13,
+            color: colors.grisCarbon,
+          }}
+          selectable
+        >
+          Rol asignado
+        </Text>
+        <RoleBadge role={rol} />
+      </View>
+
       <Controller
         control={control}
         name="nombresCompletos"
@@ -154,24 +181,28 @@ export function SubordinateRegistrationScreen() {
           />
         )}
       />
-      <Pressable
-        accessibilityRole="button"
-        className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        disabled={isSubmitting || cargando}
+      <AnimatedButton
+        title={isSubmitting || cargando ? 'Creando cuenta…' : 'Crear y enviar verificación'}
+        variant="primaryAccent"
+        loading={isSubmitting || cargando}
+        haptic="medium"
         onPress={() => {
           void handleSubmit(onSubmit)();
         }}
-      >
-        <Text className="font-bold text-white" selectable>
-          {isSubmitting || cargando ? 'Creando cuenta…' : 'Crear y enviar verificación'}
-        </Text>
-      </Pressable>
+      />
       <Pressable
         accessibilityRole="button"
-        className="min-h-11 items-center justify-center"
+        style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
         onPress={() => volverSeguro('/usuarios')}
       >
-        <Text className="font-semibold text-secundario" selectable>
+        <Text
+          style={{
+            fontFamily: fontFamilies.bodyBold,
+            fontSize: 14,
+            color: colors.moradoPrincipal,
+          }}
+          selectable
+        >
           Volver al espacio de trabajo
         </Text>
       </Pressable>

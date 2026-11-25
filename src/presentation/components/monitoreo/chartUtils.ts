@@ -1,16 +1,16 @@
 import type { ResultadoProvincial } from '@/domain/ports/IMonitoreoProvincial';
 import type { ResultadoVoto } from '@/presentation/components/monitoreo/PieChartResultados';
 
-// Paleta de colores consistente con el diseño de la app
+// Paleta oficial de alto contraste liderada por Morado Principal (#6F2C91)
 const COLORES_CANDIDATOS = [
-  '#1B365D', // primario
-  '#D97706', // secundario (ámbar)
-  '#059669', // éxito (verde)
-  '#DC2626', // error (rojo)
-  '#7C3AED', // púrpura
-  '#0891B2', // cyan
-  '#D946A6', // rosa
-  '#6366F1', // índigo
+  '#6F2C91', // Morado Principal (líder / primario)
+  '#9A4EC4', // Morado medio
+  '#2E7D6B', // Verde esmeralda institucional
+  '#C2591A', // Terracota cálido
+  '#2F5D9F', // Azul pizarra
+  '#A6345C', // Magenta oscuro
+  '#5A6B2C', // Oliva oscuro
+  '#4F467A', // Índigo apagado
 ];
 
 export function obtenerColorPorIndice(indice: number): string {
@@ -33,7 +33,7 @@ export function mapearResultadosAGrafico(
 
 export function mapearVotosBlancosNulos(blancos: number, nulos: number): ResultadoVoto[] {
   return [
-    { id: 'votos-blancos', nombre: 'Votos blancos', organizacion: '', votos: blancos, color: '#64748B' },
-    { id: 'votos-nulos', nombre: 'Votos nulos', organizacion: '', votos: nulos, color: '#292524' },
+    { id: 'votos-blancos', nombre: 'Votos blancos', organizacion: '', votos: blancos, color: '#8A8194' },
+    { id: 'votos-nulos', nombre: 'Votos nulos', organizacion: '', votos: nulos, color: '#222222' },
   ];
 }

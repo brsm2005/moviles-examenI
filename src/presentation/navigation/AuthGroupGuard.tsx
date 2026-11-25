@@ -22,8 +22,8 @@ export function AuthGroupGuard({ children }: AuthGroupGuardProps) {
 
   if (inicializando) {
     return (
-      <View className="flex-1 items-center justify-center bg-fondo">
-        <ActivityIndicator size="large" color="#1B365D" />
+      <View className="flex-1 items-center justify-center bg-malva">
+        <ActivityIndicator size="large" color="#6F2C91" />
       </View>
     );
   }

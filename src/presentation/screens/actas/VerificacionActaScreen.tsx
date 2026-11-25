@@ -23,6 +23,7 @@ import {
   Controller,
   useFieldArray,
   useForm,
+  useWatch,
   type Control,
   type SubmitErrorHandler,
 } from 'react-hook-form';
@@ -94,11 +95,11 @@ export function VerificacionActaScreen({
     suma: number;
     total: number;
   } | null>(null);
-  const [cuadreEnTiempoReal, setCuadreEnTiempoReal] = useState({
-    suma: 0,
-    totalSufragantes: 0,
-    cuadra: false,
-  });
+  //const [cuadreEnTiempoReal, setCuadreEnTiempoReal] = useState({
+    //suma: 0,
+    //totalSufragantes: 0,
+    //cuadra: false,
+  //});
   const cameraRef = useRef<CameraView>(null);
   const cuadreSheetRef = useRef<BottomSheetModal>(null);
   const procesamientoActivo = useRef(false);
@@ -109,7 +110,6 @@ export function VerificacionActaScreen({
     handleSubmit,
     getValues,
     reset,
-    watch,
     formState: { isSubmitting },
   } = useForm<ActaVerificacionInput, undefined, ActaVerificacion>({
     resolver: zodResolver(actaVerificacionSchema),
@@ -123,23 +123,32 @@ export function VerificacionActaScreen({
   });
   const { fields } = useFieldArray({ control, name: 'votosCandidatos' });
 
-  // Validación en tiempo real
-  const watchedValues = watch();
-  
-  useEffect(() => {
-    const totalSufragantes = numeroDeCampo(watchedValues.totalSufragantes ?? '') ?? 0;
-    const votosBlancos = numeroDeCampo(watchedValues.votosBlancos ?? '') ?? 0;
-    const votosNulos = numeroDeCampo(watchedValues.votosNulos ?? '') ?? 0;
-    const votosCandidatos = (watchedValues.votosCandidatos ?? []).reduce(
-      (sum, voto) => sum + (numeroDeCampo(voto.votos ?? '') ?? 0),
+  // Escucha tecla por tecla sin generar nuevas referencias en cada render
+  const [totalSufragantesStr, votosBlancosStr, votosNulosStr, votosCandidatosList] =
+    useWatch({
+      control,
+      name: [
+        'totalSufragantes',
+        'votosBlancos',
+        'votosNulos',
+        'votosCandidatos',
+      ],
+    });
+
+  const cuadreEnTiempoReal = useMemo(() => {
+    const totalSufragantes = numeroDeCampo(totalSufragantesStr ?? '') ?? 0;
+    const votosBlancos = numeroDeCampo(votosBlancosStr ?? '') ?? 0;
+    const votosNulos = numeroDeCampo(votosNulosStr ?? '') ?? 0;
+    const votosCandidatos = (votosCandidatosList ?? []).reduce(
+      (sum, voto) => sum + (numeroDeCampo(voto?.votos ?? '') ?? 0),
       0,
     );
 
     const suma = votosCandidatos + votosBlancos + votosNulos;
     const cuadra = suma === totalSufragantes;
 
-    setCuadreEnTiempoReal({ suma, totalSufragantes, cuadra });
-  }, [watchedValues]);
+    return { suma, totalSufragantes, cuadra };
+  }, [totalSufragantesStr, votosBlancosStr, votosNulosStr, votosCandidatosList]);
 
   useEffect(() => {
     let activa = true;
@@ -466,8 +475,8 @@ export function VerificacionActaScreen({
 
   if (cargando) {
     return (
-      <View className="flex-1 items-center justify-center bg-fondo">
-        <ActivityIndicator size="large" color="#1B365D" />
+      <View className="flex-1 items-center justify-center bg-malva">
+        <ActivityIndicator size="large" color="#6F2C91" />
       </View>
     );
   }
@@ -481,319 +490,377 @@ export function VerificacionActaScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       className="flex-1"
     >
-      <View className="flex-1 bg-fondo">
+      <View className="flex-1 bg-malva">
         <ScrollView
           className="flex-1"
           contentInsetAdjustmentBehavior="automatic"
-          contentContainerClassName="gap-5 px-5 pb-10 pt-5"
+          contentContainerClassName="gap-5 px-5 pb-12 pt-5"
           keyboardShouldPersistTaps="handled"
         >
-        <View className="gap-1">
-          <Text className="text-xs font-bold tracking-[2px] text-secundario" selectable>
-            {acta?.estado === 'SYNCED' ? 'CORRECCIÓN CON AUDITORÍA' : 'REVISIÓN HUMANA'}
-          </Text>
-          <Text className="text-2xl font-bold text-texto" selectable>
-            {acta?.estado === 'SYNCED'
-              ? 'Editar acta enviada'
-              : 'Verificar y corregir'}
-          </Text>
-          <Text className="text-sm leading-5 text-slate-600" selectable>
-            Confirme cada cifra con la fotografía. Los campos que el OCR no pudo leer requieren llenado manual.
-          </Text>
-          {acta ? (
-            <Text className="mt-1 text-xs text-slate-500" selectable>
-              {acta.dignidad} · Mesa {acta.mesaJrvId} · {acta.estado}
+          {/* Cabecera Morado Principal */}
+          <View className="gap-2 rounded-2xl bg-primario p-5">
+            <Text className="font-display text-3xl uppercase tracking-wider text-white" selectable>
+              {acta?.estado === 'SYNCED'
+                ? 'Editar acta enviada'
+                : 'Verificar y confirmar acta'}
             </Text>
-          ) : null}
-        </View>
-
-        {!acta ? (
-          <Text className="rounded-xl bg-red-50 p-4 text-sm text-red-800" selectable>
-            No se pudo cargar el acta solicitada.
-          </Text>
-        ) : !puedeEditar && acta.estado !== 'PENDING_SYNC' ? (
-          <View className="gap-2 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-            <Text className="font-bold text-blue-950" selectable>
-              {acta.estado === 'PENDING_OCR'
-                ? 'OCR en espera'
-                : 'Procesando imagen'}
+            <Text className="font-body text-sm leading-5 text-malva" selectable>
+              Confirme cada cifra con la fotografía. Los campos resaltados en crema requieren llenado manual.
             </Text>
-            <Text className="text-sm leading-5 text-blue-900" selectable>
-              El acta aparecerá lista para revisión cuando termine la extracción automática. No se enviará sin su confirmación.
-            </Text>
-            {acta.estado === 'PENDING_OCR' ? (
-              <Pressable accessibilityRole="button" disabled={guardando}
-                onPress={() => void procesarFotografia(acta.fotoUri, false)}
-                className="min-h-11 justify-center">
-                <Text className="font-bold text-blue-950" selectable>
-                  {guardando ? 'Procesando OCR…' : 'Reintentar OCR'}
+            {acta ? (
+              <View className="mt-1 self-start rounded-full bg-primario-oscuro px-3 py-1">
+                <Text className="font-body-bold text-xs text-amarillo" selectable>
+                  {acta.dignidad} · Mesa {acta.mesaJrvId} · {acta.estado}
                 </Text>
-              </Pressable>
+              </View>
             ) : null}
           </View>
-        ) : (
-          <>
-            <View className="gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-              <View className="flex-row items-center justify-between gap-3">
-                <Text className="flex-1 font-bold text-texto" selectable>
-                  Fotografía del acta
-                </Text>
-                <Text className="text-xs font-semibold text-slate-500" selectable>
-                  Pellizque para ampliar
-                </Text>
-              </View>
-              {camaraActiva ? (
-                <View className="gap-3">
-                  <CameraView
-                    ref={cameraRef}
-                    style={{ height: 320 }}
-                    facing="back"
-                    mode="picture"
-                  />
-                  <View className="flex-row gap-3">
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={guardando}
-                      className="min-h-12 flex-1 items-center justify-center rounded-xl bg-primario px-3"
-                      onPress={() => void capturarNuevaFoto()}
-                    >
-                      <Text className="font-bold text-white" selectable>
-                        Tomar fotografía
-                      </Text>
-                    </Pressable>
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={guardando}
-                      className="min-h-12 items-center justify-center rounded-xl border border-slate-300 px-4"
-                      onPress={() => setCamaraActiva(false)}
-                    >
-                      <Text className="font-bold text-texto" selectable>
-                        Cancelar
-                      </Text>
-                    </Pressable>
+
+          {!acta ? (
+            <View className="rounded-2xl border border-red-300 bg-red-50 p-4">
+              <Text className="font-body-semibold text-sm text-red-800" selectable>
+                No se pudo cargar el acta solicitada.
+              </Text>
+            </View>
+          ) : !puedeEditar && acta.estado !== 'PENDING_SYNC' ? (
+            <View className="gap-3 rounded-2xl border border-borde-lavanda bg-lavanda p-5">
+              <Text className="font-display text-2xl uppercase text-primario" selectable>
+                {acta.estado === 'PENDING_OCR'
+                  ? 'OCR en espera'
+                  : 'Procesando imagen'}
+              </Text>
+              <Text className="font-body text-sm leading-5 text-texto" selectable>
+                El acta aparecerá lista para revisión cuando termine la extracción automática. No se enviará sin su confirmación.
+              </Text>
+              {acta.estado === 'PENDING_OCR' ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={guardando}
+                  onPress={() => void procesarFotografia(acta.fotoUri, false)}
+                  className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
+                >
+                  <Text className="font-body-bold text-amarillo" selectable>
+                    {guardando ? 'Procesando OCR…' : 'Reintentar OCR'}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : (
+            <>
+              {/* Tarjeta de evidencia fotográfica */}
+              <View className="gap-3 rounded-2xl border border-borde-lavanda bg-white p-4">
+                <View className="flex-row items-center justify-between gap-3">
+                  <Text className="flex-1 font-display text-2xl uppercase text-primario" selectable>
+                    Fotografía del acta
+                  </Text>
+                  <View className="rounded-full bg-lavanda px-3 py-1">
+                    <Text className="font-body-bold text-xs text-primario" selectable>
+                      Pellizque para zoom
+                    </Text>
                   </View>
                 </View>
-              ) : (
-                <>
-                  {fotoUri ? (
-                    <VistaFoto uri={fotoUri} />
-                  ) : (
-                    <View className="h-56 items-center justify-center rounded-xl bg-slate-100">
-                      <Text className="text-sm text-slate-600" selectable>
-                        No hay una fotografía disponible.
-                      </Text>
+
+                {camaraActiva ? (
+                  <View className="gap-3">
+                    <View className="overflow-hidden rounded-xl border-2 border-primario">
+                      <CameraView
+                        ref={cameraRef}
+                        style={{ height: 320 }}
+                        facing="back"
+                        mode="picture"
+                      />
                     </View>
-                  )}
-                  {puedeEditar ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      disabled={guardando}
-                      className="min-h-11 items-center justify-center rounded-xl border border-slate-300 bg-white px-4"
-                      onPress={() => void capturarNuevaFoto()}
-                    >
-                      <Text className="font-semibold text-texto" selectable>
-                        Reemplazar fotografía con la cámara
-                      </Text>
-                    </Pressable>
-                  ) : null}
-                </>
-              )}
-            </View>
-
-            {hayCamposNulos ? (
-              <View className="rounded-xl border border-amber-300 bg-amber-50 p-4">
-                <Text className="text-sm font-bold text-amber-950" selectable>
-                  Campos resaltados: el OCR no pudo leerlos
-                </Text>
-                <Text className="mt-1 text-sm leading-5 text-amber-900" selectable>
-                  Complete esos valores manualmente antes de confirmar.
-                </Text>
-              </View>
-            ) : null}
-
-            {acta.alertaUbicacion ? (
-              <Text className="rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-900" selectable>
-                ! La ubicación registrada requiere revisión.
-              </Text>
-            ) : null}
-
-            <View className="gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-              <Text className="text-lg font-bold text-texto" selectable>
-                Resultados electorales
-              </Text>
-              <CampoNumero
-                control={control}
-                name="totalSufragantes"
-                etiqueta="Total de sufragantes"
-                ilegible={acta.totalSufragantes === null}
-                editable={puedeEditar}
-              />
-              <CampoNumero
-                control={control}
-                name="votosBlancos"
-                etiqueta="Votos blancos"
-                ilegible={acta.votosBlancos === null}
-                editable={puedeEditar}
-              />
-              <CampoNumero
-                control={control}
-                name="votosNulos"
-                etiqueta="Votos nulos"
-                ilegible={acta.votosNulos === null}
-                editable={puedeEditar}
-              />
-              <View className="gap-3 pt-1">
-                <Text className="font-bold text-texto" selectable>
-                  Votos por candidato
-                </Text>
-                {fields.map((field, indice) => (
-                  <CampoNumero
-                    key={field.id}
-                    control={control}
-                    name={`votosCandidatos.${indice}.votos`}
-                    etiqueta={
-                      candidatosPorId.get(field.candidatoId)?.nombresCompletos ??
-                      `Candidato ${indice + 1}`
-                    }
-                    ilegible={acta.votosCandidatos[indice]?.votos === null}
-                    editable={puedeEditar}
-                  />
-                ))}
+                    <View className="flex-row gap-3">
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={guardando}
+                        className="min-h-12 flex-1 items-center justify-center rounded-xl bg-amarillo px-3"
+                        onPress={() => void capturarNuevaFoto()}
+                      >
+                        <Text className="font-body-bold text-primario" selectable>
+                          Tomar fotografía
+                        </Text>
+                      </Pressable>
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={guardando}
+                        className="min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white px-4"
+                        onPress={() => setCamaraActiva(false)}
+                      >
+                        <Text className="font-body-bold text-texto" selectable>
+                          Cancelar
+                        </Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : (
+                  <>
+                    {fotoUri ? (
+                      <VistaFoto uri={fotoUri} />
+                    ) : (
+                      <View className="h-56 items-center justify-center rounded-xl bg-gris-claro">
+                        <Text className="font-body text-sm text-texto-secundario" selectable>
+                          No hay una fotografía disponible.
+                        </Text>
+                      </View>
+                    )}
+                    {puedeEditar ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        disabled={guardando}
+                        className="min-h-12 items-center justify-center rounded-xl border-[1.5px] border-primario bg-white px-4"
+                        onPress={() => void capturarNuevaFoto()}
+                      >
+                        <Text className="font-body-bold text-sm text-primario" selectable>
+                          Reemplazar fotografía con la cámara
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </>
+                )}
               </View>
 
-              <View className={`mt-4 rounded-xl border p-4 ${
-                cuadreEnTiempoReal.totalSufragantes === 0
-                  ? 'border-slate-300 bg-slate-50'
-                  : cuadreEnTiempoReal.cuadra
-                    ? 'border-green-300 bg-green-50'
-                    : 'border-red-300 bg-red-50'
-              }`}>
-                <View className="flex-row items-center justify-between gap-3">
+              {hayCamposNulos ? (
+                <View className="rounded-2xl border border-primario bg-crema p-4">
+                  <Text className="font-body-bold text-sm text-primario" selectable>
+                    Campos resaltados: el OCR no pudo leerlos
+                  </Text>
+                  <Text className="mt-1 font-body text-sm leading-5 text-texto" selectable>
+                    Complete esos valores manualmente antes de confirmar.
+                  </Text>
+                </View>
+              ) : null}
+
+              {acta.alertaUbicacion ? (
+                <View className="rounded-2xl border border-primario bg-crema p-4">
+                  <Text className="font-body-bold text-sm text-texto" selectable>
+                    ! La ubicación registrada requiere revisión.
+                  </Text>
+                </View>
+              ) : null}
+
+              {/* Formulario ergonómico de dígitos de votación */}
+              <View className="gap-3.5 rounded-2xl border border-borde-lavanda bg-white p-4">
+                <Text className="font-display text-2xl uppercase tracking-wide text-primario" selectable>
+                  Resultados electorales
+                </Text>
+
+                <CampoNumero
+                  control={control}
+                  name="totalSufragantes"
+                  etiqueta="Total de sufragantes"
+                  ilegible={acta.totalSufragantes === null}
+                  editable={puedeEditar}
+                  destacado
+                />
+
+                <View className="flex-row gap-3">
                   <View className="flex-1">
-                    <Text className={`font-bold ${
-                      cuadreEnTiempoReal.totalSufragantes === 0
-                        ? 'text-slate-900'
-                        : cuadreEnTiempoReal.cuadra
-                          ? 'text-green-900'
-                          : 'text-red-900'
-                    }`} selectable>
+                    <CampoNumero
+                      control={control}
+                      name="votosBlancos"
+                      etiqueta="Votos blancos"
+                      ilegible={acta.votosBlancos === null}
+                      editable={puedeEditar}
+                    />
+                  </View>
+                  <View className="flex-1">
+                    <CampoNumero
+                      control={control}
+                      name="votosNulos"
+                      etiqueta="Votos nulos"
+                      ilegible={acta.votosNulos === null}
+                      editable={puedeEditar}
+                    />
+                  </View>
+                </View>
+
+                <View className="gap-3 pt-2">
+                  <Text className="font-display text-xl uppercase tracking-wide text-primario" selectable>
+                    Votos por candidato
+                  </Text>
+                  {fields.map((field, indice) => (
+                    <CampoNumero
+                      key={field.id}
+                      control={control}
+                      name={`votosCandidatos.${indice}.votos`}
+                      etiqueta={
+                        candidatosPorId.get(field.candidatoId)?.nombresCompletos ??
+                        `Candidato ${indice + 1}`
+                      }
+                      ilegible={acta.votosCandidatos[indice]?.votos === null}
+                      editable={puedeEditar}
+                      alterno={indice % 2 === 1}
+                    />
+                  ))}
+                </View>
+
+                {/* Panel de cuadre aritmético en tiempo real */}
+                <View
+                  className={`mt-2 gap-1.5 rounded-2xl border-[1.5px] p-4 ${
+                    cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'border-primario bg-crema'
+                      : cuadreEnTiempoReal.cuadra
+                        ? 'border-green-400 bg-green-50'
+                        : 'border-red-400 bg-red-50'
+                  }`}
+                >
+                  <View className="flex-row items-center justify-between gap-2">
+                    <Text
+                      className={`font-display text-2xl uppercase ${
+                        cuadreEnTiempoReal.totalSufragantes === 0
+                          ? 'text-primario'
+                          : cuadreEnTiempoReal.cuadra
+                            ? 'text-green-800'
+                            : 'text-red-800'
+                      }`}
+                      selectable
+                    >
                       {cuadreEnTiempoReal.totalSufragantes === 0
                         ? 'Verificación de cuadre'
                         : cuadreEnTiempoReal.cuadra
                           ? '✓ Cuadre correcto'
                           : '✗ Cuadre incorrecto'}
                     </Text>
-                    <Text className={`mt-1 text-sm leading-5 ${
-                      cuadreEnTiempoReal.totalSufragantes === 0
-                        ? 'text-slate-700'
-                        : cuadreEnTiempoReal.cuadra
-                          ? 'text-green-800'
-                          : 'text-red-800'
-                    }`} selectable>
-                      {cuadreEnTiempoReal.totalSufragantes === 0
-                        ? 'Complete los campos para verificar que la suma de votos coincida.'
-                        : cuadreEnTiempoReal.cuadra
-                          ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide con el total de sufragantes.`
-                          : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
+                    <Text
+                      className="font-display text-2xl text-texto"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                    >
+                      {cuadreEnTiempoReal.suma} / {cuadreEnTiempoReal.totalSufragantes}
                     </Text>
                   </View>
+                  <Text
+                    className={`font-body text-sm leading-5 ${
+                      cuadreEnTiempoReal.totalSufragantes === 0
+                        ? 'text-texto'
+                        : cuadreEnTiempoReal.cuadra
+                          ? 'text-green-900'
+                          : 'text-red-900'
+                    }`}
+                    selectable
+                  >
+                    {cuadreEnTiempoReal.totalSufragantes === 0
+                      ? 'Complete los campos para verificar que la suma de votos coincida.'
+                      : cuadreEnTiempoReal.cuadra
+                        ? `La suma de votos (${cuadreEnTiempoReal.suma}) coincide con el total de sufragantes.`
+                        : `Suma: ${cuadreEnTiempoReal.suma} · Total: ${cuadreEnTiempoReal.totalSufragantes} · Diferencia: ${Math.abs(cuadreEnTiempoReal.suma - cuadreEnTiempoReal.totalSufragantes)}`}
+                  </Text>
                 </View>
               </View>
-            </View>
 
-            {acta.estado === 'PENDING_SYNC' ? (
-              <Text className="rounded-xl bg-blue-50 p-4 text-sm leading-5 text-blue-900" selectable>
-                La verificación ya está guardada. Reintente el envío o espere a que vuelva la conexión.
-              </Text>
-            ) : null}
-
-            {puedeEnviar ? (
-              <Pressable
-                accessibilityRole="button"
-                disabled={guardando || isSubmitting || camaraActiva}
-                className={`min-h-12 items-center justify-center rounded-xl px-4 ${
-                  guardando || isSubmitting || camaraActiva ? 'bg-slate-400' : 'bg-primario'
-                }`}
-                onPress={() => void handleSubmit(guardarResultados, revisarErrores)()}
-              >
-                {guardando || isSubmitting ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text className="font-bold text-white" selectable>
-                    {acta.estado === 'SYNCED'
-                      ? 'Guardar corrección y auditoría'
-                      : acta.estado === 'PENDING_SYNC'
-                        ? 'Reintentar envío'
-                        : 'Confirmar y enviar acta'}
+              {acta.estado === 'PENDING_SYNC' ? (
+                <View className="rounded-2xl border border-primario bg-crema p-4">
+                  <Text className="font-body-semibold text-sm leading-5 text-texto" selectable>
+                    La verificación ya está guardada localmente. Reintente el envío o espere a que vuelva la conexión.
                   </Text>
-                )}
-              </Pressable>
-            ) : null}
-          </>
-        )}
+                </View>
+              ) : null}
 
-        <Pressable
-          accessibilityRole="button"
-          className="min-h-11 items-center justify-center"
-          onPress={() => volverSeguro('/(actas)/historial')}
-        />
-          <Text className="font-semibold text-slate-600" selectable>
-            Volver al historial
-          </Text>
-      </ScrollView>
+              {puedeEnviar ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={guardando || isSubmitting || camaraActiva}
+                  className={`min-h-14 items-center justify-center rounded-xl px-4 ${
+                    guardando || isSubmitting || camaraActiva ? 'bg-gris-claro' : 'bg-primario'
+                  }`}
+                  onPress={() => void handleSubmit(guardarResultados, revisarErrores)()}
+                >
+                  {guardando || isSubmitting ? (
+                    <ActivityIndicator color="#EAE84B" />
+                  ) : (
+                    <Text
+                      className={`font-display text-2xl uppercase tracking-wider ${
+                        guardando || isSubmitting || camaraActiva
+                          ? 'text-texto-secundario'
+                          : 'text-amarillo'
+                      }`}
+                      selectable
+                    >
+                      {acta.estado === 'SYNCED'
+                        ? 'Guardar corrección y auditoría'
+                        : acta.estado === 'PENDING_SYNC'
+                          ? 'Reintentar envío'
+                          : 'Confirmar y enviar acta'}
+                    </Text>
+                  )}
+                </Pressable>
+              ) : null}
+            </>
+          )}
 
-      <BottomSheetModal
-        ref={cuadreSheetRef}
-        snapPoints={['45%']}
-        enablePanDownToClose
-        backdropComponent={(props) => (
-          <BottomSheetBackdrop
-            {...props}
-            disappearsOnIndex={-1}
-            appearsOnIndex={0}
-          />
-        )}
-        backgroundStyle={{ backgroundColor: '#FFFFFF' }}
-        handleIndicatorStyle={{ backgroundColor: '#CBD5E1' }}
-      >
-        <BottomSheetView className="flex-1 items-center justify-center gap-3 px-6 pb-8">
-          <LottieView
-            source={errorAnimation}
-            autoPlay
-            style={{ width: 72, height: 72 }}
-          />
-          <Text className="text-center text-xl font-bold text-amber-950" selectable>
-            El cuadre no coincide
-          </Text>
-          <Text className="text-center text-base leading-6 text-slate-700" selectable>
-            La suma de votos es {detalleCuadre?.suma ?? 0}; el total de sufragantes es {detalleCuadre?.total ?? 0}.
-          </Text>
-          <Text className="text-center text-sm text-slate-600" selectable>
-            Diferencia: {Math.abs((detalleCuadre?.suma ?? 0) - (detalleCuadre?.total ?? 0))} votos. Corrija las cifras antes de enviar.
-          </Text>
           <Pressable
             accessibilityRole="button"
-            className="mt-2 min-h-11 items-center justify-center rounded-xl bg-primario px-6"
-            onPress={() => cuadreSheetRef.current?.dismiss()}
+            className="min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white"
+            onPress={() => volverSeguro('/(actas)/historial')}
           >
-            <Text className="font-bold text-white" selectable>
-              Revisar valores
+            <Text className="font-body-bold text-primario" selectable>
+              Volver al historial
             </Text>
           </Pressable>
-        </BottomSheetView>
-      </BottomSheetModal>
+        </ScrollView>
 
-      <FeedbackBottomSheet
-        content={feedback}
-        onDismiss={() => {
-          setFeedback(null);
-          if (irAtrasAlCerrar) {
-            setIrAtrasAlCerrar(false);
-            volverSeguro('/(actas)/historial');
-          }
-        }}
-      />
-    </View>
+        <BottomSheetModal
+          ref={cuadreSheetRef}
+          snapPoints={['48%']}
+          enablePanDownToClose
+          backdropComponent={(props) => (
+            <BottomSheetBackdrop
+              {...props}
+              disappearsOnIndex={-1}
+              appearsOnIndex={0}
+            />
+          )}
+          backgroundStyle={{ backgroundColor: '#FFFFFF', borderRadius: 24 }}
+          handleIndicatorStyle={{ backgroundColor: '#D4BFE0', width: 44 }}
+        >
+          <BottomSheetView className="flex-1 items-center justify-center gap-3 px-6 pb-8">
+            <LottieView
+              source={errorAnimation}
+              autoPlay
+              style={{ width: 76, height: 76 }}
+            />
+            <Text className="text-center font-display text-3xl uppercase text-primario" selectable>
+              El cuadre no coincide
+            </Text>
+            <Text
+              className="text-center font-body-semibold text-base leading-6 text-texto"
+              style={{ fontVariant: ['tabular-nums'] }}
+              selectable
+            >
+              La suma de votos es {detalleCuadre?.suma ?? 0}; el total de sufragantes es {detalleCuadre?.total ?? 0}.
+            </Text>
+            <View className="rounded-xl bg-crema px-4 py-2">
+              <Text
+                className="text-center font-body-bold text-sm text-texto"
+                style={{ fontVariant: ['tabular-nums'] }}
+                selectable
+              >
+                Diferencia: {Math.abs((detalleCuadre?.suma ?? 0) - (detalleCuadre?.total ?? 0))} votos. Corrija las cifras antes de enviar.
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              className="mt-2 min-h-12 w-full items-center justify-center rounded-xl bg-primario px-6"
+              onPress={() => cuadreSheetRef.current?.dismiss()}
+            >
+              <Text className="font-body-bold text-amarillo" selectable>
+                Revisar valores
+              </Text>
+            </Pressable>
+          </BottomSheetView>
+        </BottomSheetModal>
+
+        <FeedbackBottomSheet
+          content={feedback}
+          onDismiss={() => {
+            setFeedback(null);
+            if (irAtrasAlCerrar) {
+              setIrAtrasAlCerrar(false);
+              volverSeguro('/(actas)/historial');
+            }
+          }}
+        />
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -808,6 +875,8 @@ interface CampoNumeroProps {
   etiqueta: string;
   ilegible: boolean;
   editable: boolean;
+  destacado?: boolean;
+  alterno?: boolean;
 }
 
 function CampoNumero({
@@ -816,37 +885,60 @@ function CampoNumero({
   etiqueta,
   ilegible,
   editable,
+  destacado = false,
+  alterno = false,
 }: CampoNumeroProps) {
   return (
     <Controller
       control={control}
       name={name}
       render={({ field, fieldState }) => (
-        <View className="gap-1">
-          <Text className="text-sm font-semibold text-texto" selectable>
+        <View
+          className={`gap-1.5 rounded-xl p-2.5 ${
+            ilegible
+              ? 'bg-crema'
+              : destacado
+                ? 'bg-lavanda'
+                : alterno
+                  ? 'bg-vainilla'
+                  : 'bg-white'
+          }`}
+        >
+          <Text
+            className={`font-body-bold text-sm ${
+              destacado ? 'text-primario' : 'text-texto'
+            }`}
+            selectable
+          >
             {etiqueta}
           </Text>
           <TextInput
             accessibilityLabel={etiqueta}
-            accessibilityHint={ilegible ? 'El OCR no leyó este valor; complételo manualmente.' : undefined}
-            className={`min-h-12 rounded-xl border px-4 text-base text-texto ${
+            accessibilityHint={
+              ilegible ? 'El OCR no leyó este valor; complételo manualmente.' : undefined
+            }
+            className={`min-h-14 rounded-xl border-[1.5px] px-4 font-display text-3xl text-texto focus:border-primario ${
               ilegible
-                ? 'border-amber-500 bg-amber-50'
+                ? 'border-primario bg-white'
                 : fieldState.error
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-slate-300 bg-white'
+                  ? 'border-alerta bg-red-50'
+                  : destacado
+                    ? 'border-primario bg-white'
+                    : 'border-borde-lavanda bg-white'
             } ${editable ? '' : 'opacity-70'}`}
+            style={{ fontVariant: ['tabular-nums'] }}
             keyboardType="number-pad"
             editable={editable}
             value={field.value}
             onChangeText={field.onChange}
             onBlur={field.onBlur}
-            placeholder={ilegible ? 'No legible · ingrese el valor' : 'Ingrese el valor'}
-            placeholderTextColor={ilegible ? '#92400E' : '#64748B'}
+            placeholder={ilegible ? 'Ilegible · ingrese' : '0'}
+            placeholderTextColor="#52465B"
+            selectionColor="#6F2C91"
             selectTextOnFocus
           />
           {fieldState.error ? (
-            <Text className="text-xs font-medium text-red-700" selectable>
+            <Text className="font-body-semibold text-xs text-alerta" selectable>
               {fieldState.error.message}
             </Text>
           ) : null}
@@ -871,7 +963,7 @@ function VistaFoto({ uri }: { uri: string }) {
     });
 
   return (
-    <View className="h-72 overflow-hidden rounded-xl bg-slate-100">
+    <View className="h-72 overflow-hidden rounded-xl border border-borde-lavanda bg-gris-claro">
       <GestureDetector gesture={gesto}>
         <Animated.View className="h-full w-full" style={estiloAnimado}>
           <Image

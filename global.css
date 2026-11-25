@@ -2,11 +2,37 @@
 @import "uniwind";
 
 @theme {
-  --color-primario: #1B365D;
-  --color-secundario: #0066CC;
-  --color-fondo: #F8FAFC;
+  /* Colores Principales (Oficiales) */
+  --color-primario: #6F2C91;
+  --color-primario-oscuro: #531F6E;
+  --color-amarillo: #EAE84B;
+  --color-secundario: #6F2C91;
+
+  /* Paleta Pastel (Superficies y Tarjetas) */
+  --color-lavanda: #E4D4EC;
+  --color-malva: #F3EAF8;
+  --color-crema: #FAF9C8;
+  --color-vainilla: #FCFCE6;
+  --color-beige: #F4EFE2;
+  --color-beige-borde: #E2D8C3;
+
+  /* Colores Neutros (Legibilidad y Soporte) */
+  --color-fondo: #F3EAF8;
   --color-superficie: #FFFFFF;
-  --color-texto: #0F172A;
-  --color-alerta: #DC2626;
-  --color-exito: #16A34A;
+  --color-texto: #222222;
+  --color-texto-secundario: #52465B;
+  --color-gris-claro: #F4F4F6;
+  --color-borde: #E2DFE6;
+  --color-borde-lavanda: #D4BFE0;
+
+  /* Semánticos de campo */
+  --color-alerta: #B91C1C;
+  --color-exito: #15803D;
+
+  /* Tipografía Oficial */
+  --font-display: "BebasNeue_400Regular";
+  --font-body: "Montserrat_500Medium";
+  --font-body-regular: "Montserrat_400Regular";
+  --font-body-semibold: "Montserrat_600SemiBold";
+  --font-body-bold: "Montserrat_700Bold";
 }

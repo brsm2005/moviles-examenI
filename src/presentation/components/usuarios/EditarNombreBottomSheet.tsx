@@ -63,7 +63,13 @@ export function EditarNombreBottomSheet({
       Keyboard.dismiss();
       modalRef.current?.dismiss();
     } catch (error) {
-      setErrorMsg(typeof error === 'string' ? error : error instanceof Error ? error.message : 'Error al guardar');
+      setErrorMsg(
+        typeof error === 'string'
+          ? error
+          : error instanceof Error
+            ? error.message
+            : 'Error al guardar',
+      );
     } finally {
       guardandoRef.current = false;
       setGuardando(false);
@@ -77,6 +83,8 @@ export function EditarNombreBottomSheet({
       enableDynamicSizing={false}
       enablePanDownToClose={!guardando}
       keyboardBehavior="interactive"
+      backgroundStyle={{ backgroundColor: '#FFFFFF', borderRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: '#D4BFE0', width: 44 }}
       onDismiss={() => {
         setErrorMsg(null);
         onClose();
@@ -94,16 +102,21 @@ export function EditarNombreBottomSheet({
         />
       )}
     >
-      <BottomSheetScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="px-6 pb-8 pt-4">
-        <Text className="text-2xl font-bold text-texto">Editar nombre</Text>
-        <Text className="mt-2 text-sm text-slate-600">Actualiza tu nombre en el sistema</Text>
+      <BottomSheetScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerClassName="px-6 pb-8 pt-4"
+      >
+        <Text className="font-display text-3xl uppercase text-primario">Editar nombre</Text>
+        <Text className="mt-1 font-body text-sm text-texto-secundario">
+          Actualiza tu nombre visible en el sistema electoral
+        </Text>
 
         <Controller
           control={control}
           name="nuevoNombre"
           render={({ field, fieldState }) => (
             <View className="mt-6 gap-2">
-              <Text className="text-sm font-semibold text-slate-700">Nombre completo</Text>
+              <Text className="font-body-semibold text-sm text-texto">Nombre completo</Text>
               <BottomSheetTextInput
                 accessibilityLabel="Nombre completo"
                 value={field.value}
@@ -112,27 +125,30 @@ export function EditarNombreBottomSheet({
                 autoCapitalize="words"
                 autoComplete="name"
                 editable={!guardando}
-                className={`min-h-12 rounded-xl border bg-white px-4 text-base text-texto ${
-                  fieldState.error ? 'border-red-500' : 'border-slate-300'
+                selectionColor="#6F2C91"
+                className={`min-h-12 rounded-xl border-[1.5px] bg-white px-4 font-body text-base text-texto ${
+                  fieldState.error ? 'border-alerta bg-red-50' : 'border-borde-lavanda'
                 }`}
               />
               {fieldState.error ? (
-                <Text className="text-sm text-red-700">{fieldState.error.message}</Text>
+                <Text className="font-body-semibold text-xs text-alerta">
+                  {fieldState.error.message}
+                </Text>
               ) : null}
             </View>
           )}
         />
 
         {errorMsg && (
-          <Text className="mt-4 text-sm text-red-600">{errorMsg}</Text>
+          <Text className="mt-4 font-body-semibold text-sm text-alerta">{errorMsg}</Text>
         )}
 
         <Pressable
           onPress={() => void handleSubmit(onSubmit)()}
           disabled={guardando || isSubmitting}
-          className="mt-6 min-h-12 items-center justify-center rounded-xl bg-primario"
+          className="mt-6 min-h-12 items-center justify-center rounded-xl bg-primario px-4"
         >
-          <Text className="font-bold text-white">
+          <Text className="font-body-bold text-amarillo">
             {guardando ? 'Guardando…' : 'Guardar cambios'}
           </Text>
         </Pressable>
@@ -140,9 +156,9 @@ export function EditarNombreBottomSheet({
         <Pressable
           onPress={() => modalRef.current?.dismiss()}
           disabled={guardando || isSubmitting}
-          className="mt-3 min-h-10 items-center justify-center rounded-xl border border-slate-300"
+          className="mt-3 min-h-12 items-center justify-center rounded-xl border border-borde-lavanda bg-white px-4"
         >
-          <Text className="font-semibold text-texto">Cancelar</Text>
+          <Text className="font-body-semibold text-primario">Cancelar</Text>
         </Pressable>
       </BottomSheetScrollView>
     </BottomSheetModal>

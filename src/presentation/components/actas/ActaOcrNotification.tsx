@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Pressable, Text } from 'react-native';
+import { Text, View } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -7,8 +7,11 @@ import {
 } from '@gorhom/bottom-sheet';
 import { router } from 'expo-router';
 import LottieView from 'lottie-react-native';
+import { colors, fontFamilies, radius } from '@theme/tokens';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import { descartarAvisoActa } from '@/presentation/store/slices/actaSlice';
+import { hapticSuccess } from '@/presentation/utils/haptics';
 
 const successAnimation = require('../../../../assets/animations/status-success.json');
 
@@ -20,7 +23,10 @@ export function ActaOcrNotification() {
   );
 
   useEffect(() => {
-    if (actaId) requestAnimationFrame(() => modalRef.current?.present());
+    if (actaId) {
+      hapticSuccess();
+      requestAnimationFrame(() => modalRef.current?.present());
+    }
   }, [actaId]);
 
   if (!actaId) return null;
@@ -37,7 +43,7 @@ export function ActaOcrNotification() {
   return (
     <BottomSheetModal
       ref={modalRef}
-      snapPoints={['45%']}
+      snapPoints={['48%']}
       enablePanDownToClose={false}
       backdropComponent={(props) => (
         <BottomSheetBackdrop
@@ -47,30 +53,59 @@ export function ActaOcrNotification() {
           pressBehavior="none"
         />
       )}
-      backgroundStyle={{ backgroundColor: '#FFFFFF' }}
-      handleIndicatorStyle={{ backgroundColor: '#CBD5E1' }}
+      backgroundStyle={{ backgroundColor: colors.blancoPuro, borderRadius: 24 }}
+      handleIndicatorStyle={{ backgroundColor: colors.bordeLavanda, width: 44 }}
     >
       <BottomSheetView className="flex-1 items-center justify-center gap-3 px-7 pb-8">
-        <LottieView
-          source={successAnimation}
-          autoPlay
-          style={{ width: 92, height: 92 }}
-        />
-        <Text className="text-center text-xl font-bold text-texto" selectable>
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: radius.full,
+            backgroundColor: colors.cremaLimon,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <LottieView
+            source={successAnimation}
+            autoPlay
+            style={{ width: 84, height: 84 }}
+          />
+        </View>
+        <Text
+          style={{
+            textAlign: 'center',
+            fontFamily: fontFamilies.display,
+            fontSize: 28,
+            lineHeight: 32,
+            letterSpacing: 0.7,
+            color: colors.moradoPrincipal,
+            textTransform: 'uppercase',
+          }}
+          selectable
+        >
           Acta lista para revisión
         </Text>
-        <Text className="text-center text-base leading-6 text-slate-600" selectable>
+        <Text
+          style={{
+            textAlign: 'center',
+            fontFamily: fontFamilies.bodyMedium,
+            fontSize: 15,
+            lineHeight: 22,
+            color: colors.grisCarbon,
+          }}
+          selectable
+        >
           El OCR terminó. Revise las cifras y confirme manualmente antes de sincronizar.
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          className="mt-2 min-h-11 items-center justify-center rounded-xl bg-primario px-6"
+        <AnimatedButton
+          title="Revisar acta ahora"
+          variant="yellowAction"
+          haptic="medium"
+          style={{ width: '100%', marginTop: 8 }}
           onPress={abrirConfirmacion}
-        >
-          <Text className="font-semibold text-white" selectable>
-            Revisar acta
-          </Text>
-        </Pressable>
+        />
       </BottomSheetView>
     </BottomSheetModal>
   );

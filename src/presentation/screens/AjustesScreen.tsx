@@ -14,7 +14,7 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
   const [enviando, setEnviando] = useState(false);
   const [editandoNombre, setEditandoNombre] = useState(false);
 
-  if (inicializando) return <ActivityIndicator />;
+  if (inicializando) return <ActivityIndicator color="#6F2C91" />;
   if (!perfil) return <Redirect href="/(auth)/login" />;
   if (perfil.mustChangePassword) return <Redirect href="/(auth)/change-password" />;
 
@@ -39,64 +39,108 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
   };
 
   return (
-    <View className="flex-1 bg-fondo">
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerClassName="gap-5 px-5 pb-12 pt-6">
-        <Pressable accessibilityRole="button" onPress={() => volverSeguro(routeForRole(perfil.rol))} className="min-h-11 justify-center">
-          <Text className="font-bold text-primario">← Volver</Text>
+    <View className="flex-1 bg-malva">
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerClassName="gap-5 px-5 pb-12 pt-5"
+      >
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => volverSeguro(routeForRole(perfil.rol))}
+          className="min-h-12 self-start justify-center rounded-xl border border-borde-lavanda bg-white px-4"
+        >
+          <Text className="font-body-bold text-sm text-primario">← Volver</Text>
         </Pressable>
-        <Text className="text-3xl font-bold text-texto" selectable>Perfil y ajustes</Text>
-        
+
+        <Text className="font-display text-4xl uppercase tracking-wider text-primario" selectable>
+          Perfil y ajustes
+        </Text>
+
+        {/* Tarjeta de perfil en Lavanda Suave */}
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Editar nombre"
           onPress={() => setEditandoNombre(true)}
-          className="gap-2 rounded-2xl border border-slate-200 bg-white p-5"
+          className="gap-2 rounded-2xl border border-borde-lavanda bg-lavanda p-5"
         >
-          <Text className="text-lg font-bold text-texto" selectable>{perfil.nombresCompletos}</Text>
-          <Text className="text-sm text-slate-600" selectable>{perfil.rol.replaceAll('_', ' ')}</Text>
-          <Text className="mt-2 text-xs font-semibold text-primario">Tocar para editar nombre</Text>
+          <View className="self-start rounded-full bg-primario px-3 py-1">
+            <Text className="font-body-bold text-xs uppercase tracking-wider text-amarillo" selectable>
+              {perfil.rol.replaceAll('_', ' ')}
+            </Text>
+          </View>
+          <Text className="font-body-bold text-xl text-texto" selectable>
+            {perfil.nombresCompletos}
+          </Text>
+          <Text className="mt-1 font-body-bold text-xs text-primario">
+            Tocar para editar nombre →
+          </Text>
         </Pressable>
 
         {(perfil.rol === 'COORDINADOR_PROVINCIAL' || perfil.rol === 'COORDINADOR_RECINTO') && (
-          <>
-            <Text className="text-lg font-bold text-texto">Gestión de equipo</Text>
+          <View className="gap-3 rounded-2xl border border-borde-lavanda bg-white p-5">
+            <Text className="font-display text-2xl uppercase tracking-wide text-primario">
+              Gestión de equipo
+            </Text>
             <Pressable
+              accessibilityRole="button"
               onPress={() => router.push('/usuarios')}
-              className="rounded-xl border border-primario bg-primario px-4 py-3"
+              className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
             >
-              <Text className="text-center font-semibold text-white">
-                {perfil.rol === 'COORDINADOR_PROVINCIAL' ? 'Gestionar Coordinadores de Recinto' : 'Gestionar Veedores'}
+              <Text className="text-center font-body-bold text-amarillo">
+                {perfil.rol === 'COORDINADOR_PROVINCIAL'
+                  ? 'Gestionar Coordinadores de Recinto'
+                  : 'Gestionar Veedores'}
               </Text>
             </Pressable>
-          </>
+          </View>
         )}
 
-        <Text className="text-lg font-bold text-texto">Diagnóstico de Crashlytics</Text>
-        <View className="gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-          <Text className="text-sm font-semibold text-amber-900">ℹ Requisitos para que funcione:</Text>
-          <Text className="text-xs text-amber-800">• APK compilado de forma nativa (no funciona en Expo Go)</Text>
-          <Text className="text-xs text-amber-800">• google-services.json correctamente configurado</Text>
-          <Text className="text-xs text-amber-800">• En debug, habilitar Crashlytics antes de compilar</Text>
-          <Text className="text-xs text-amber-800">• Conexión a Internet (aunque el registro se guarda offline)</Text>
-        </View>
-        <Text className="text-sm leading-5 text-slate-600">
-          Provoca un cierre fatal controlado para comprobar la captura de crashes.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          disabled={enviando}
-          onPress={() => void simular()}
-          className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        >
-          <Text className="font-bold text-white">
-            {enviando ? 'Provocando crash…' : 'Simular crash fatal'}
+        <View className="gap-3 rounded-2xl border border-borde-lavanda bg-white p-5">
+          <Text className="font-display text-2xl uppercase tracking-wide text-primario">
+            Diagnóstico de Crashlytics
           </Text>
-        </Pressable>
-        <View className="gap-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <Text className="text-sm font-semibold text-slate-700">🔍 Para verificar:</Text>
-          <Text className="text-xs text-slate-600">1. Reinicia la aplicación con conexión a Internet.</Text>
-          <Text className="text-xs text-slate-600">2. Accede a Firebase Console → Crashlytics y consulta los errores fatales.</Text>
-          <Text className="text-xs text-slate-600">3. La entrega puede tardar varios minutos.</Text>
+          <View className="gap-2 rounded-xl border border-primario bg-crema p-4">
+            <Text className="font-body-bold text-sm text-primario">
+              Requisitos de verificación
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              • APK compilado de forma nativa (no funciona en Expo Go)
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              • google-services.json correctamente configurado
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              • En debug, habilitar Crashlytics antes de compilar
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              • Conexión a Internet (aunque el registro se guarda offline)
+            </Text>
+          </View>
+          <Text className="font-body text-sm leading-5 text-texto-secundario">
+            Provoca un cierre fatal controlado para comprobar la captura de crashes.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={enviando}
+            onPress={() => void simular()}
+            className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
+          >
+            <Text className="font-body-bold text-white">
+              {enviando ? 'Provocando crash…' : 'Simular crash fatal'}
+            </Text>
+          </Pressable>
+          <View className="gap-1.5 rounded-xl bg-vainilla p-4">
+            <Text className="font-body-bold text-sm text-primario">Pasos para verificar</Text>
+            <Text className="font-body text-xs text-texto">
+              1. Reinicia la aplicación con conexión a Internet.
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              2. Accede a Firebase Console → Crashlytics y consulta los errores fatales.
+            </Text>
+            <Text className="font-body text-xs text-texto">
+              3. La entrega puede tardar varios minutos.
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
@@ -104,11 +148,13 @@ export function AjustesScreen({ crashReporting }: { crashReporting: IDiagnostico
         nombreActual={perfil.nombresCompletos}
         isOpen={editandoNombre}
         onClose={() => setEditandoNombre(false)}
-        onSuccess={() => setFeedback({
-          title: 'Nombre actualizado',
-          message: 'Tu nombre ha sido actualizado exitosamente.',
-          tone: 'success',
-        })}
+        onSuccess={() =>
+          setFeedback({
+            title: 'Nombre actualizado',
+            message: 'Tu nombre ha sido actualizado exitosamente.',
+            tone: 'success',
+          })
+        }
       />
 
       <FeedbackBottomSheet content={feedback} onDismiss={() => setFeedback(null)} />

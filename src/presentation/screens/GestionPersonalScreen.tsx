@@ -9,16 +9,18 @@ import {
   Text,
   View,
 } from 'react-native';
+import { colors } from '@theme/tokens';
 import type { Perfil } from '@/domain/entities/Perfil';
 import { FeedbackBottomSheet, type FeedbackContent } from '@/presentation/components/auth/FeedbackBottomSheet';
 import { CrearPersonalBottomSheet } from '@/presentation/components/personal/CrearPersonalBottomSheet';
 import { EditarNombreBottomSheet } from '@/presentation/components/personal/EditarNombreBottomSheet';
+import { AnimatedButton } from '@/presentation/components/ui/AnimatedButton';
 import { useAppDispatch, useAppSelector } from '@/presentation/store';
 import {
   cargarSubordinados,
   clearPersonalError,
-  eliminarPersonal,
   clearUltimoCreado,
+  eliminarPersonal,
 } from '@/presentation/store/slices/personalSlice';
 
 export function GestionPersonalScreen({ perfil }: { perfil: Perfil }) {
@@ -32,21 +34,26 @@ export function GestionPersonalScreen({ perfil }: { perfil: Perfil }) {
   const [abrirCrear, setAbrirCrear] = useState(false);
   const previousUltimoCreado = useRef<string | null>(null);
 
-  // Determinar rol esperado para subordinados
   const rolSubordinado: 'COORDINADOR_RECINTO' | 'VEEDOR' | null =
-    perfil.rol === 'COORDINADOR_PROVINCIAL' ? 'COORDINADOR_RECINTO' : perfil.rol === 'COORDINADOR_RECINTO' ? 'VEEDOR' : null;
+    perfil.rol === 'COORDINADOR_PROVINCIAL'
+      ? 'COORDINADOR_RECINTO'
+      : perfil.rol === 'COORDINADOR_RECINTO'
+        ? 'VEEDOR'
+        : null;
 
   const nombreRolSubordinado =
-    rolSubordinado === 'COORDINADOR_RECINTO' ? 'Coordinador de Recinto' : rolSubordinado === 'VEEDOR' ? 'Veedor' : null;
+    rolSubordinado === 'COORDINADOR_RECINTO'
+      ? 'Coordinador de Recinto'
+      : rolSubordinado === 'VEEDOR'
+        ? 'Veedor'
+        : null;
 
-  // Recargar al enfocar pantalla
   useFocusEffect(
     useCallback(() => {
       void dispatch(cargarSubordinados());
     }, [dispatch]),
   );
 
-  // Mostrar feedback cuando se crea un usuario
   useEffect(() => {
     if (ultimoCreado && ultimoCreado.id !== previousUltimoCreado.current) {
       previousUltimoCreado.current = ultimoCreado.id;
@@ -62,8 +69,10 @@ export function GestionPersonalScreen({ perfil }: { perfil: Perfil }) {
 
   if (!rolSubordinado || !nombreRolSubordinado) {
     return (
-      <View className="flex-1 items-center justify-center bg-fondo">
-        <Text className="text-slate-600">No tiene subordinados para gestionar</Text>
+      <View className="flex-1 items-center justify-center bg-malva px-6">
+        <Text className="font-body text-texto-secundario">
+          No tiene subordinados para gestionar
+        </Text>
       </View>
     );
   }
@@ -87,106 +96,112 @@ export function GestionPersonalScreen({ perfil }: { perfil: Perfil }) {
   };
 
   return (
-    <View className="flex-1 bg-fondo">
+    <View className="flex-1 bg-malva">
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
-        contentContainerClassName="gap-5 px-5 pb-12 pt-6"
+        contentContainerClassName="gap-5 px-5 pb-12 pt-5"
         refreshControl={
           <RefreshControl
             refreshing={cargando}
+            tintColor={colors.moradoPrincipal}
+            colors={[colors.moradoPrincipal]}
             onRefresh={() => void dispatch(cargarSubordinados())}
           />
         }
       >
-        {/* Header */}
         <Pressable
           accessibilityRole="button"
           onPress={() => router.back()}
-          className="min-h-11 justify-center"
+          className="min-h-12 self-start justify-center rounded-xl border border-borde-lavanda bg-white px-4"
         >
-          <Text className="font-bold text-primario">Volver</Text>
+          <Text className="font-body-bold text-sm text-primario">← Volver</Text>
         </Pressable>
 
-        <View className="gap-2">
-          <Text className="text-3xl font-bold text-texto">Gestión de {nombreRolSubordinado}s</Text>
-          <Text className="text-sm text-slate-600">
+        <View className="gap-2 rounded-2xl bg-primario p-5">
+          <Text className="font-display text-3xl uppercase tracking-wider text-white">
+            Gestión de {nombreRolSubordinado}s
+          </Text>
+          <Text className="font-body text-sm text-malva">
             Administre los {nombreRolSubordinado}s bajo su responsabilidad
           </Text>
         </View>
 
-        {/* Error mensaje */}
         {error ? (
-          <View className="rounded-xl border border-red-200 bg-red-50 p-4">
-            <Text className="text-sm text-red-800">{error}</Text>
-            <Pressable
+          <View className="gap-2 rounded-2xl border border-red-300 bg-red-50 p-4">
+            <Text className="font-body text-sm text-red-800">{error}</Text>
+            <AnimatedButton
+              title="Descartar"
+              variant="danger"
+              compact
               onPress={() => dispatch(clearPersonalError())}
-              className="mt-2"
-            >
-              <Text className="font-semibold text-red-900">Descartar</Text>
-            </Pressable>
+            />
           </View>
         ) : null}
 
-        {/* Botón crear */}
-        <Pressable
+        <AnimatedButton
+          title={`Crear nuevo ${nombreRolSubordinado}`}
+          variant="yellowAction"
+          haptic="medium"
           onPress={() => setAbrirCrear(true)}
-          className="min-h-12 items-center justify-center rounded-xl bg-primario px-4"
-        >
-          <Text className="font-bold text-white">
-            Crear nuevo {nombreRolSubordinado}
-          </Text>
-        </Pressable>
+        />
 
-        {/* Loading */}
         {cargando && subordinados.length === 0 ? (
           <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#1B365D" />
+            <ActivityIndicator size="large" color={colors.moradoPrincipal} />
           </View>
         ) : null}
 
-        {/* Sin datos */}
         {!cargando && subordinados.length === 0 ? (
-          <View className="rounded-2xl border border-slate-200 bg-white p-8">
-            <Text className="text-center text-slate-600">
+          <View className="rounded-2xl border border-borde-lavanda bg-white p-8">
+            <Text className="text-center font-body text-texto-secundario">
               No hay {nombreRolSubordinado}s registrados aún
             </Text>
           </View>
         ) : null}
 
-        {/* Lista de subordinados */}
-        {subordinados.map((personal) => (
+        {subordinados.map((personal, idx) => (
           <View
             key={personal.id}
-            className="gap-3 rounded-2xl border border-slate-200 bg-white p-4"
+            className={`gap-3 rounded-2xl border p-4 ${
+              idx % 2 === 1
+                ? 'border-beige-borde bg-vainilla'
+                : 'border-borde-lavanda bg-white'
+            }`}
           >
             <View className="gap-1">
-              <Text className="text-lg font-bold text-texto">{personal.nombresCompletos}</Text>
-              <Text className="text-sm text-slate-600">{personal.email}</Text>
+              <Text className="font-body-bold text-lg text-texto" selectable>
+                {personal.nombresCompletos}
+              </Text>
+              <Text className="font-body text-sm text-texto-secundario" selectable>
+                {personal.email}
+              </Text>
               {personal.telefono ? (
-                <Text className="text-sm text-slate-600">{personal.telefono}</Text>
+                <Text className="font-body text-sm text-texto-secundario" selectable>
+                  {personal.telefono}
+                </Text>
               ) : null}
             </View>
 
-            <View className="gap-2">
-              <Pressable
+            <View className="flex-row gap-2">
+              <AnimatedButton
+                title="Editar"
+                variant="outline"
+                compact
+                style={{ flex: 1 }}
                 onPress={() => setEditandoId(personal.id)}
-                className="min-h-11 items-center justify-center rounded-xl border border-primario bg-transparent px-4"
-              >
-                <Text className="font-semibold text-primario">Editar información</Text>
-              </Pressable>
-
-              <Pressable
+              />
+              <AnimatedButton
+                title="Desactivar"
+                variant="danger"
+                compact
+                style={{ flex: 1 }}
                 onPress={() => void handleEliminar(personal.id)}
-                className="min-h-11 items-center justify-center rounded-xl bg-red-50 px-4"
-              >
-                <Text className="font-semibold text-red-700">Desactivar acceso</Text>
-              </Pressable>
+              />
             </View>
           </View>
         ))}
       </ScrollView>
 
-      {/* Bottom Sheets */}
       <CrearPersonalBottomSheet
         rolEsperado={rolSubordinado}
         rolNombre={nombreRolSubordinado}

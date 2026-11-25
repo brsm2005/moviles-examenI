@@ -22,22 +22,23 @@ export function AuthTextField({
 
   return (
     <View className="gap-2">
-      <Text className="text-sm font-semibold text-slate-700" selectable>
+      <Text className="font-body-semibold text-sm text-texto" selectable>
         {label}
       </Text>
       <View className="relative">
         <TextInput
           {...inputProps}
           secureTextEntry={secureTextEntry}
-          className={`min-h-12 rounded-xl border bg-white px-4 text-base text-texto ${
-            error ? 'border-red-500' : 'border-slate-300'
+          className={`min-h-12 rounded-xl border-[1.5px] bg-white px-4 font-body text-base text-texto focus:border-primario ${
+            error ? 'border-alerta bg-red-50' : 'border-borde-lavanda'
           } ${shouldShowToggle ? 'pr-14' : ''} ${className ?? ''}`}
-          placeholderTextColor="#64748B"
+          placeholderTextColor="#52465B"
+          selectionColor="#6F2C91"
         />
         {shouldShowToggle ? (
           <Pressable
             onPress={() => setIsPasswordVisible((visible) => !visible)}
-            className="absolute right-4 top-0 h-12 items-center justify-center"
+            className="absolute right-2 top-0 h-12 w-12 items-center justify-center"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             accessibilityRole="button"
             accessibilityLabel={isPasswordVisible ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -48,14 +49,14 @@ export function AuthTextField({
                 android: isPasswordVisible ? 'visibility' : 'visibility_off',
                 web: isPasswordVisible ? 'visibility' : 'visibility_off',
               }}
-              size={18}
-              tintColor="#64748B"
+              size={20}
+              tintColor="#6F2C91"
             />
           </Pressable>
         ) : null}
       </View>
       {error ? (
-        <Text className="text-sm text-red-700" selectable>
+        <Text className="font-body-semibold text-xs text-alerta" selectable>
           {error}
         </Text>
       ) : null}

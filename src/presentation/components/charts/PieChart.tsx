@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text } from 'react-native';
-import Svg, { Path, G } from 'react-native-svg';
+import { Text, View } from 'react-native';
+import Svg, { G, Path } from 'react-native-svg';
 
 interface DataPoint {
   label: string;
@@ -25,6 +25,7 @@ export function PieChart({
 
   const slices = useMemo(() => {
     const totalValue = data.reduce((sum, item) => sum + item.value, 0);
+    if (totalValue <= 0) return [];
 
     return data.reduce(
       (acc, item) => {
@@ -56,13 +57,16 @@ export function PieChart({
           angle: endAngle,
         };
       },
-      { slices: [] as {
-        path: string;
-        label: string;
-        value: number;
-        color: string;
-        percentage: string;
-      }[], angle: -Math.PI / 2 }
+      {
+        slices: [] as {
+          path: string;
+          label: string;
+          value: number;
+          color: string;
+          percentage: string;
+        }[],
+        angle: -Math.PI / 2,
+      },
     ).slices;
   }, [data, radius, outerRadius]);
 
@@ -75,7 +79,7 @@ export function PieChart({
               key={index}
               d={slice.path}
               fill={slice.color}
-              stroke="white"
+              stroke="#FFFFFF"
               strokeWidth="2"
             />
           ))}
@@ -85,15 +89,31 @@ export function PieChart({
       {showLegend && (
         <View className="w-full gap-2">
           {slices.map((slice, index) => (
-            <View key={index} className="flex-row items-center gap-2">
+            <View
+              key={index}
+              className={`flex-row items-center gap-2.5 rounded-xl px-3 py-2 ${
+                index % 2 === 1 ? 'bg-vainilla' : 'bg-white'
+              }`}
+            >
               <View
-                className="h-4 w-4 rounded"
+                className="h-3.5 w-3.5 shrink-0 rounded-full"
                 style={{ backgroundColor: slice.color }}
               />
-              <Text className="flex-1 text-sm text-texto">
-                {slice.label}: {slice.percentage}%
+              <Text className="min-w-0 flex-1 font-body-semibold text-sm text-texto">
+                {slice.label}
               </Text>
-              <Text className="text-sm font-semibold text-slate-600">{slice.value}</Text>
+              <Text
+                className="shrink-0 font-display text-xl text-primario"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                {slice.percentage}%
+              </Text>
+              <Text
+                className="shrink-0 font-body-semibold text-xs text-texto-secundario"
+                style={{ fontVariant: ['tabular-nums'] }}
+              >
+                ({slice.value.toLocaleString()})
+              </Text>
             </View>
           ))}
         </View>
