@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { test } from 'node:test';
-import { filtrarMonitoreo } from './filtrarMonitoreo.ts';
+import { filtrarMonitoreo } from '../src/domain/usecases/filtrarMonitoreo.ts';
 
 const datos = {
   avances: [

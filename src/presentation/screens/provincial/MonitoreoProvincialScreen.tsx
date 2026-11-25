@@ -53,10 +53,10 @@ export function MonitoreoProvincialScreen({ monitoreo }: { monitoreo: IMonitoreo
   const resultados = seleccion?.resultados ?? [];
   const actas = seleccion?.actas ?? [];
 
-  const totalMesas = recintosVisibles.reduce((sum, a) => sum + a.totalMesas, 0);
-  const mesasReportadas = recintosVisibles.reduce((sum, a) => sum + a.mesasReportadas, 0);
-  const porcentajeAvance = totalMesas > 0 ? Math.round((mesasReportadas / totalMesas) * 100) : 0;
-  const esEnVivo = estado === 'En vivo';
+  const totalActasEsperadas = recintosVisibles.reduce((sum, a) => sum +a.totalMesas * 2, 0);
+  const totalActasReportadas = recintosVisibles.reduce((sum, a) => sum +a.actasReportadas, 0);
+  const porcentajeAvance =totalActasEsperadas > 0? Math.min(100, Math.round((totalActasReportadas /
+    totalActasEsperadas) * 100)): 0;const esEnVivo = estado === 'En vivo';
 
   return (
     <ScrollView
@@ -256,59 +256,72 @@ export function MonitoreoProvincialScreen({ monitoreo }: { monitoreo: IMonitoreo
               Avance de mesas
             </Text>
             <Text className="font-body text-sm text-texto-secundario">
-              Una mesa reportada tiene al menos una acta enviada.
-            </Text>
-          </View>
-
-          {recintosVisibles.map((a, index) => {
-            const pctRecinto = a.totalMesas > 0 ? Math.round((a.mesasReportadas / a.totalMesas) * 100) : 0;
-            const ancho = `${Math.max(0, Math.min(100, pctRecinto))}%` as const;
-            return (
-              <View
-                key={a.recintoId}
-                className={`gap-2.5 rounded-2xl border p-4 ${
-                  index % 2 === 1
-                    ? 'border-beige-borde bg-vainilla'
-                    : 'border-borde-lavanda bg-white'
-                }`}
-                style={{ borderCurve: 'continuous' }}
-              >
-                <View className="flex-row items-start justify-between gap-3">
-                  <Text
-                    className="min-w-0 flex-1 font-body-bold text-base text-texto"
-                    selectable
-                  >
-                    {a.nombre} · {a.parroquia}
-                  </Text>
-                  <Text
-                    className="shrink-0 font-display text-2xl text-primario"
-                    style={{ fontVariant: ['tabular-nums'] }}
-                  >
-                    {pctRecinto}%
-                  </Text>
-                </View>
-
-                <View className="h-2.5 w-full overflow-hidden rounded-full bg-gris-claro">
+                  Cada mesa requiere 2 actas (Alcaldía y Prefectura). El
+                  avance se calcula sobre el total de actas esperadas.
+                </Text>
+              </View>
+    
+              {recintosVisibles.map((a, index) => {
+                const totalActasRecinto = a.totalMesas * 2;
+                const pctRecinto =
+                  totalActasRecinto > 0
+                    ? Math.min(100, Math.round((a.actasReportadas /
+                    totalActasRecinto) * 100))
+                    : 0;
+                const ancho = `${Math.max(0, Math.min(100, pctRecinto))}%` as
+                const;
+                return (
                   <View
-                    className="h-full rounded-full bg-primario"
-                    style={{ width: ancho }}
-                  />
-                </View>
-
-                <Text
-                  className="font-body-semibold text-sm text-texto"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                  selectable
-                >
-                  {a.mesasReportadas} de {a.totalMesas} mesas con reportes · {a.mesasFaltantes} sin reportes
-                </Text>
-                <Text
-                  className="font-body text-xs text-texto-secundario"
-                  style={{ fontVariant: ['tabular-nums'] }}
-                  selectable
-                >
-                  {a.actasReportadas} actas enviadas · {a.actasFaltantes} faltantes
-                </Text>
+                    key={a.recintoId}
+                    className={`gap-2.5 rounded-2xl border p-4 ${
+                      index % 2 === 1
+                        ? 'border-beige-borde bg-vainilla'
+                        : 'border-borde-lavanda bg-white'
+                    }`}
+                    style={{ borderCurve: 'continuous' }}
+                  >
+                    <View className="flex-row items-start justify-between
+                    gap-3">
+                      <Text
+                        className="min-w-0 flex-1 font-body-bold text-base
+                        text-texto"
+                        selectable
+                      >
+                        {a.nombre} · {a.parroquia}
+                      </Text>
+                      <Text
+                        className="shrink-0 font-display text-2xl
+                        text-primario"
+                        style={{ fontVariant: ['tabular-nums'] }}
+                      >
+                        {pctRecinto}%
+                      </Text>
+                    </View>
+    
+                    <View className="h-2.5 w-full overflow-hidden
+                    rounded-full bg-gris-claro">
+                      <View
+                        className="h-full rounded-full bg-primario"
+                        style={{ width: ancho }}
+                      />
+                    </View>
+    
+                    <Text
+                      className="font-body-semibold text-sm text-texto"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                      selectable
+                    >
+                      {a.actasReportadas} de {totalActasRecinto} actas
+                      enviadas · {a.actasFaltantes} faltantes
+                    </Text>
+                    <Text
+                      className="font-body text-xs text-texto-secundario"
+                      style={{ fontVariant: ['tabular-nums'] }}
+                      selectable
+                    >
+                      {a.mesasReportadas} de {a.totalMesas} mesas con
+                      reportes · {a.mesasFaltantes} sin reportes
+                    </Text>
 
                 {a.alertas > 0 ? (
                   <View className="flex-row items-center gap-2 rounded-xl bg-crema px-3 py-2">
